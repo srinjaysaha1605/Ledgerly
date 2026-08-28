@@ -1,0 +1,6 @@
+{
+  "name": "Ledgerly",
+  "description": "A retro arcade and comic book inspired personal finance tracker with account management, expense and income tracking, budget management, savings goals, calendar views, and smart financial insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
