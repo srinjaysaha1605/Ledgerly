@@ -1,9 +1,7 @@
 /**
- * Cloud Storage & Amazon S3 / Supabase Storage Upload Utility
- * Handles profile image uploads, validation, Supabase Storage SDK, S3 presigned URLs, and mock fallback.
+ * Cloud Storage & Amazon S3 Upload Utility
+ * Handles profile image uploads, validation, S3 presigned URLs, and fallback data URLs.
  */
-
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface S3Config {
   bucketName: string;
@@ -70,40 +68,7 @@ export async function uploadImageToS3(
   const filePath = `${userId}-${timestamp}.${fileExt}`;
   const s3Key = `${folder}/${filePath}`;
 
-  // OPTION A: If Supabase Storage is configured, try direct Supabase Storage upload first
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const targetBucket = bucketSlug === 'profile-picture' || bucketSlug === 'profile-pictures' ? bucketSlug : (bucketSlug || 'avatars');
-      
-      const { data, error } = await supabase.storage
-        .from(targetBucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: file.type,
-        });
-
-      if (!error && data) {
-        const { data: publicUrlData } = supabase.storage
-          .from(targetBucket)
-          .getPublicUrl(filePath);
-
-        if (publicUrlData?.publicUrl) {
-          return {
-            url: publicUrlData.publicUrl,
-            key: data.path || filePath,
-            bucket: targetBucket,
-            region: config.region,
-            isSimulated: false,
-          };
-        }
-      }
-    } catch (sbErr) {
-      console.warn('Supabase storage direct upload attempted, checking fallback:', sbErr);
-    }
-  }
-
-  // OPTION B: If a presigned endpoint is configured on backend
+  // OPTION A: If a presigned endpoint is configured on backend
   if (config.presignedEndpoint && config.presignedEndpoint.includes('/api/')) {
     try {
       const presignedRes = await fetch(config.presignedEndpoint, {

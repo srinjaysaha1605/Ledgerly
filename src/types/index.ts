@@ -75,11 +75,8 @@ export interface UserProfile {
   id: string;
   fullName: string;
   email: string;
-  contactNumber: string;
-  guardianContact?: string;
   currency: string;
   currencySymbol: string;
-  avatarUrl?: string;
   isEmailVerified: boolean;
   joinedDate: string;
 }

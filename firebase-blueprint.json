@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "UserProfile": {
+      "path": "users/{userId}",
+      "fields": {
+        "fullName": "string",
+        "email": "string",
+        "currency": "string",
+        "currencySymbol": "string",
+        "isEmailVerified": "boolean",
+        "joinedDate": "string"
+      }
+    },
+    "Account": {
+      "path": "users/{userId}/accounts/{accountId}",
+      "fields": {
+        "name": "string",
+        "type": "string",
+        "openingBalance": "number",
+        "currentBalance": "number",
+        "status": "string",
+        "color": "string",
+        "icon": "string",
+        "accountNumber": "string",
+        "isFavorite": "boolean"
+      }
+    },
+    "Transaction": {
+      "path": "users/{userId}/transactions/{transactionId}",
+      "fields": {
+        "date": "string",
+        "amount": "number",
+        "type": "string",
+        "title": "string",
+        "merchant": "string",
+        "source": "string",
+        "category": "string",
+        "subcategory": "string",
+        "accountId": "string",
+        "toAccountId": "string",
+        "notes": "string",
+        "tags": "array",
+        "receiptUrl": "string",
+        "isRecurring": "boolean",
+        "recurringFrequency": "string"
+      }
+    },
+    "Budget": {
+      "path": "users/{userId}/budgets/{budgetId}",
+      "fields": {
+        "category": "string",
+        "monthlyLimit": "number",
+        "period": "string",
+        "alertThreshold": "number"
+      }
+    },
+    "Goal": {
+      "path": "users/{userId}/goals/{goalId}",
+      "fields": {
+        "name": "string",
+        "targetAmount": "number",
+        "currentProgress": "number",
+        "deadline": "string",
+        "category": "string",
+        "color": "string",
+        "icon": "string"
+      }
+    },
+    "Category": {
+      "path": "users/{userId}/categories/{categoryId}",
+      "fields": {
+        "name": "string",
+        "type": "string",
+        "icon": "string",
+        "color": "string",
+        "isCustom": "boolean"
+      }
+    },
+    "Notification": {
+      "path": "users/{userId}/notifications/{notificationId}",
+      "fields": {
+        "title": "string",
+        "message": "string",
+        "type": "string",
+        "date": "string",
+        "read": "boolean",
+        "actionUrl": "string"
+      }
+    }
+  }
+}

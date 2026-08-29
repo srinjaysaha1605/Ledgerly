@@ -61,6 +61,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const displayName = (user.fullName && user.fullName.trim())
+    ? user.fullName
+    : (user.email && user.email.trim())
+      ? user.email.split('@')[0]
+      : 'User';
+
   const handleLogout = () => {
     arcadeAudio.playClick();
     setIsLoggedIn(false);
@@ -271,16 +277,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
             {isLoggedIn ? (
               <button
                 onClick={() => { arcadeAudio.playClick(); setProfileDropdownOpen(!profileDropdownOpen); setNotificationsOpen(false); }}
-                className="comic-btn bg-zinc-800 p-1 flex items-center gap-2 hover:bg-zinc-700"
+                className="comic-btn bg-zinc-800 px-2.5 py-1 flex items-center gap-2 hover:bg-zinc-700 border-2 border-black shadow-[2px_2px_0px_#000]"
               >
-                <img 
-                  src={user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} 
-                  alt={user.fullName}
-                  className="w-7 h-7 rounded border border-black object-cover"
-                />
-                <span className="hidden md:inline font-comic text-sm text-yellow-400 max-w-[100px] truncate">
-                  {user.fullName.split(' ')[0]}
+                <div className="w-7 h-7 rounded bg-[#F9ED69] text-black border border-black flex items-center justify-center shrink-0 font-comic font-bold text-xs">
+                  <User className="w-4 h-4 text-black" />
+                </div>
+                <span className="font-comic text-sm font-bold text-[#F9ED69] max-w-[120px] truncate">
+                  {displayName}
                 </span>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
               </button>
             ) : (
               <button
@@ -294,7 +299,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
             {profileDropdownOpen && isLoggedIn && (
               <div className="absolute right-0 mt-2 w-64 bg-zinc-900 border-3 border-black shadow-[6px_6px_0px_#000000] z-50 p-3 comic-box">
                 <div className="border-b-2 border-zinc-800 pb-3 mb-2">
-                  <div className="font-comic text-base text-yellow-400 truncate">{user.fullName}</div>
+                  <div className="font-comic text-base text-[#F9ED69] font-bold truncate">{displayName}</div>
                   <div className="text-xs text-zinc-400 font-mono truncate">{user.email}</div>
                   <div className="mt-1.5 inline-flex items-center gap-1.5 bg-green-950/80 text-green-400 border border-green-700/60 text-[10px] px-2 py-0.5 rounded font-mono font-bold">
                     <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />

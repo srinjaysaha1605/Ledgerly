@@ -4,7 +4,6 @@ import {
   Lock, 
   Mail, 
   User, 
-  Phone, 
   ShieldAlert, 
   CheckCircle2, 
   KeyRound, 
@@ -28,8 +27,6 @@ export const AuthModal: React.FC = () => {
   // Registration Form State
   const [regFullName, setRegFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
-  const [regContact, setRegContact] = useState('');
-  const [regGuardian, setRegGuardian] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
   // Login Form State (starts empty for security)
@@ -54,11 +51,8 @@ export const AuthModal: React.FC = () => {
     e.preventDefault();
     arcadeAudio.playLevelUp();
     updateUserProfile({
-      fullName: regFullName || 'User Account',
-      email: regEmail || 'user@ledgerly.app',
-      contactNumber: regContact || '+1 (555) 012-3456',
-      guardianContact: regGuardian,
-      isEmailVerified: true,
+      fullName: regFullName.trim() || (regEmail.trim() ? regEmail.trim().split('@')[0] : 'User'),
+      email: regEmail.trim(),
     });
     setIsLoggedIn(true);
     setSuccessMessage('Account created successfully! Session active.');
@@ -222,37 +216,7 @@ export const AuthModal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-pixel text-zinc-400 uppercase mb-1">
-                    CONTACT NUMBER
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="+1 (555) 012-3456"
-                      value={regContact}
-                      onChange={(e) => setRegContact(e.target.value)}
-                      className="w-full bg-zinc-950 border-2 border-black pl-8 pr-2 py-1.5 text-xs text-white font-mono rounded focus:border-yellow-400 outline-none"
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-[10px] font-pixel text-zinc-400 uppercase mb-1">
-                    GUARDIAN CONTACT (OPTIONAL)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Parent/Guardian #"
-                    value={regGuardian}
-                    onChange={(e) => setRegGuardian(e.target.value)}
-                    className="w-full bg-zinc-950 border-2 border-black px-2 py-1.5 text-xs text-white font-mono rounded focus:border-yellow-400 outline-none"
-                  />
-                </div>
-              </div>
 
               <div>
                 <label className="block text-[10px] font-pixel text-zinc-400 uppercase mb-1">

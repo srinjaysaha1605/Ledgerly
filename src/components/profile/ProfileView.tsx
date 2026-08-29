@@ -1,31 +1,24 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   User, 
   Mail, 
-  Phone, 
   ShieldCheck, 
   Lock, 
-  Camera, 
   CheckCircle2, 
   Sparkles,
   Save,
-  Upload,
-  KeyRound,
   ShieldAlert,
   LogOut,
   Sliders,
+  Eye,
+  EyeOff,
+  KeyRound,
   Bell,
   Volume2,
-  VolumeX,
-  CreditCard,
-  HeartHandshake,
-  Check,
-  Eye,
-  EyeOff
+  VolumeX
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { arcadeAudio } from '../../utils/audio';
-import { uploadImageToS3 } from '../../utils/s3Upload';
 
 export const ProfileView: React.FC = () => {
   const { 
@@ -41,15 +34,7 @@ export const ProfileView: React.FC = () => {
   // Profile Form State
   const [fullName, setFullName] = useState(user.fullName);
   const [email, setEmail] = useState(user.email);
-  const [contactNumber, setContactNumber] = useState(user.contactNumber);
-  const [guardianContact, setGuardianContact] = useState(user.guardianContact || '');
   const [currency, setCurrency] = useState(user.currency || 'USD');
-  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '');
-
-  // Photo Upload State
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Security & Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -78,49 +63,14 @@ export const ProfileView: React.FC = () => {
     AUD: 'A$',
   };
 
-  const avatarPresets = [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-  ];
-
-  // Handle Photo Upload
-  const handleCustomImageUpload = async (file: File) => {
-    try {
-      setIsUploading(true);
-      setErrorMessage('');
-      setUploadProgress('Uploading photo...');
-
-      arcadeAudio.playClick();
-      const res = await uploadImageToS3(file, 'avatars', user.id || 'user_avatar');
-
-      setAvatarUrl(res.url);
-      updateUserProfile({ avatarUrl: res.url });
-      arcadeAudio.playLevelUp();
-      setSavedSuccess('Profile photo updated successfully!');
-      setTimeout(() => setSavedSuccess(''), 3000);
-    } catch (err: any) {
-      arcadeAudio.playAlert();
-      setErrorMessage(err.message || 'Failed to upload image. Please try a different photo.');
-    } finally {
-      setIsUploading(false);
-      setUploadProgress('');
-    }
-  };
-
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     arcadeAudio.playLevelUp();
     updateUserProfile({
       fullName,
       email,
-      contactNumber,
-      guardianContact,
       currency,
       currencySymbol: currencyMap[currency] || '$',
-      avatarUrl,
     });
     setSavedSuccess('Profile and preferences updated successfully!');
     setTimeout(() => setSavedSuccess(''), 2500);
@@ -193,7 +143,7 @@ export const ProfileView: React.FC = () => {
             }`}
           >
             <User className="w-4 h-4" />
-            <span>Personal Info & Photo</span>
+            <span>Personal Information</span>
           </button>
 
           <button
@@ -233,85 +183,36 @@ export const ProfileView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 1: PERSONAL INFORMATION & PHOTO */}
+      {/* TAB 1: PERSONAL INFORMATION */}
       {activeTab === 'profile' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Profile Photo Card */}
+          {/* Account Summary Card */}
           <div className="comic-box bg-[#16213E] p-5 flex flex-col items-center text-center border-4 border-black shadow-[6px_6px_0px_#000]">
-            <div className="relative mb-3">
-              <img 
-                src={avatarUrl || avatarPresets[0]} 
-                alt={fullName} 
-                className="w-28 h-28 rounded-full border-4 border-black object-cover shadow-[4px_4px_0px_#000] bg-zinc-950"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Change Photo"
-                className="absolute bottom-0 right-0 bg-[#F9ED69] text-black p-2 rounded-full border-2 border-black font-pixel shadow-[2px_2px_0px_#000] hover:scale-110 transition-transform"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
+            <div className="w-20 h-20 rounded-2xl bg-[#F9ED69] text-black border-4 border-black flex items-center justify-center mb-3 shadow-[4px_4px_0px_#000]">
+              <User className="w-10 h-10 text-black" />
             </div>
 
-            <div className="font-comic text-2xl text-[#F9ED69]">{fullName}</div>
-            <div className="text-xs font-mono text-zinc-300">{email}</div>
+            <div className="font-comic text-2xl text-[#F9ED69]">{fullName || 'User'}</div>
+            <div className="text-xs font-mono text-zinc-300 break-all max-w-full">{email}</div>
 
-            <div className="mt-2 inline-flex items-center gap-1.5 bg-[#00E676]/20 border border-[#00E676] text-[#00E676] text-[10px] px-2.5 py-0.5 rounded font-mono font-bold">
+            <div className="mt-3 inline-flex items-center gap-1.5 bg-[#00E676]/20 border border-[#00E676] text-[#00E676] text-[10px] px-2.5 py-1 rounded font-mono font-bold">
               <span className="w-2 h-2 rounded-full bg-[#00E676] animate-pulse shrink-0" />
-              ONLINE VAULT
+              FIRESTORE SECURE VAULT
             </div>
 
-            {/* Custom Photo Upload Button */}
-            <div className="mt-4 pt-4 border-t-2 border-black w-full">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/png, image/jpeg, image/webp, image/gif"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleCustomImageUpload(file);
-                }}
-              />
-              
-              <button
-                type="button"
-                disabled={isUploading}
-                onClick={() => fileInputRef.current?.click()}
-                className="comic-btn w-full bg-[#00D2FF] text-black font-comic text-sm py-2 font-bold uppercase flex items-center justify-center gap-2 hover:bg-[#33ddff]"
-              >
-                <Upload className="w-4 h-4" />
-                <span>{isUploading ? uploadProgress || 'Uploading...' : 'Upload New Photo'}</span>
-              </button>
-              <span className="block text-[11px] font-mono text-zinc-400 mt-1">
-                Supports JPG, PNG, WEBP up to 5MB
-              </span>
-            </div>
-
-            {/* Preset Avatars */}
-            <div className="mt-4 pt-4 border-t-2 border-black w-full">
-              <span className="block text-[10px] font-pixel text-zinc-300 uppercase mb-2">
-                OR CHOOSE AN AVATAR
-              </span>
-              <div className="flex items-center justify-center gap-2">
-                {avatarPresets.map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      arcadeAudio.playClick();
-                      setAvatarUrl(url);
-                      updateUserProfile({ avatarUrl: url });
-                    }}
-                    className={`w-10 h-10 rounded-full border-2 border-black overflow-hidden transition-all ${
-                      avatarUrl === url ? 'ring-3 ring-[#F9ED69] scale-110' : 'opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={url} alt="Preset" className="w-full h-full object-cover" />
-                  </button>
-                ))}
+            <div className="mt-4 pt-4 border-t-2 border-black w-full text-left space-y-2 font-mono text-xs">
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-400">Account Status:</span>
+                <span className="text-[#00E676] font-bold">Active</span>
+              </div>
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-400">Currency:</span>
+                <span className="text-[#F9ED69] font-bold">{currency}</span>
+              </div>
+              <div className="flex justify-between text-zinc-300">
+                <span className="text-zinc-400">Member Since:</span>
+                <span className="text-white">{user.joinedDate || '2026'}</span>
               </div>
             </div>
           </div>
@@ -355,37 +256,6 @@ export const ProfileView: React.FC = () => {
                       className="w-full bg-black border-3 border-white/20 pl-9 pr-3 py-2 text-sm font-mono text-white rounded outline-none focus:border-[#F9ED69]"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block font-pixel text-xs text-[#F9ED69] uppercase mb-1">
-                    CONTACT NUMBER
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      required
-                      value={contactNumber}
-                      onChange={(e) => setContactNumber(e.target.value)}
-                      className="w-full bg-black border-3 border-white/20 pl-9 pr-3 py-2 text-sm font-mono text-white rounded outline-none focus:border-[#F9ED69]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-pixel text-xs text-[#F9ED69] uppercase mb-1">
-                    EMERGENCY / GUARDIAN CONTACT (OPTIONAL)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. +1 (555) 902-1144"
-                    value={guardianContact}
-                    onChange={(e) => setGuardianContact(e.target.value)}
-                    className="w-full bg-black border-3 border-white/20 px-3 py-2 text-sm font-mono text-white rounded outline-none focus:border-[#F9ED69]"
-                  />
                 </div>
 
                 <div>

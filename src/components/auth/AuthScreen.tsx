@@ -3,7 +3,6 @@ import {
   Lock, 
   Mail, 
   User, 
-  Phone, 
   ShieldAlert, 
   CheckCircle2, 
   ArrowRight,
@@ -15,11 +14,22 @@ import {
   Info,
   DollarSign,
   Eye,
-  EyeOff
+  EyeOff,
+  MailCheck
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { arcadeAudio } from '../../utils/audio';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { auth, db, isFirebaseConfigured } from '../../lib/firebase';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export const AuthScreen: React.FC = () => {
   const { 
@@ -28,13 +38,12 @@ export const AuthScreen: React.FC = () => {
     user
   } = useFinance();
 
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'reset' | 'verify'>('login');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
   // Registration Form State
   const [regFullName, setRegFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
-  const [regContact, setRegContact] = useState('');
-  const [regGuardian, setRegGuardian] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regCurrency, setRegCurrency] = useState('USD');
 
@@ -85,27 +94,31 @@ export const AuthScreen: React.FC = () => {
 
     setLoading(true);
 
-    if (isSupabaseConfigured && supabase) {
+    if (isFirebaseConfigured && auth) {
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: loginEmail.trim(),
-          password: loginPassword,
-        });
-        if (error) {
-          setErrorMsg(error.message);
-          setLoading(false);
-          arcadeAudio.playAlert();
-          return;
-        }
-        if (data.user) {
+        const userCred = await signInWithEmailAndPassword(auth, loginEmail.trim(), loginPassword);
+        if (userCred.user) {
+          if (!userCred.user.emailVerified) {
+            const emailToVerify = userCred.user.email || loginEmail.trim();
+            await signOut(auth);
+            setUnverifiedEmail(emailToVerify);
+            setAuthMode('verify');
+            setLoading(false);
+            arcadeAudio.playAlert();
+            return;
+          }
           updateUserProfile({
-            email: data.user.email || loginEmail.trim(),
-            fullName: data.user.user_metadata?.full_name || user.fullName,
-            id: data.user.id,
+            email: userCred.user.email || loginEmail.trim(),
+            fullName: userCred.user.displayName || user.fullName,
+            id: userCred.user.uid,
           });
         }
       } catch (err: any) {
-        console.warn('Supabase auth failed, fallback to local session:', err);
+        console.warn('Firebase auth failed:', err);
+        setErrorMsg('Email or password is incorrect');
+        setLoading(false);
+        arcadeAudio.playAlert();
+        return;
       }
     } else {
       // In local mode, update the active user's email if provided
@@ -118,7 +131,6 @@ export const AuthScreen: React.FC = () => {
     setSuccessMsg('Session authenticated! Entering dashboard...');
     
     setTimeout(() => {
-      // Clear password in memory before entering dashboard
       setLoginPassword('');
       setIsLoggedIn(true);
       setLoading(false);
@@ -142,39 +154,59 @@ export const AuthScreen: React.FC = () => {
 
     setLoading(true);
 
-    if (isSupabaseConfigured && supabase) {
+    if (isFirebaseConfigured && auth) {
       try {
-        const { data, error } = await supabase.auth.signUp({
-          email: regEmail.trim(),
-          password: regPassword,
-          options: {
-            data: {
-              full_name: regFullName,
+        const userCred = await createUserWithEmailAndPassword(auth, regEmail.trim(), regPassword);
+        if (userCred.user) {
+          try {
+            await setDoc(doc(db, 'users', userCred.user.uid), {
+              fullName: regFullName.trim() || (regEmail.trim() ? regEmail.trim().split('@')[0] : 'User'),
+              email: regEmail.trim(),
               currency: regCurrency,
-              currency_symbol: currencySymbols[regCurrency] || '$',
-            },
-          },
-        });
-        if (error && !error.message.toLowerCase().includes('already registered')) {
-          console.warn('Supabase sign-up message:', error.message);
+              currencySymbol: currencySymbols[regCurrency] || '$',
+              isEmailVerified: false,
+              joinedDate: new Date().toISOString().split('T')[0],
+            }, { merge: true });
+          } catch (docErr) {
+            console.warn('Error creating Firestore user profile:', docErr);
+          }
+
+          try {
+            await sendEmailVerification(userCred.user);
+          } catch (verr) {
+            console.warn('Error sending verification email:', verr);
+          }
+          const emailSentTo = userCred.user.email || regEmail.trim();
+          await signOut(auth);
+          setUnverifiedEmail(emailSentTo);
+          setAuthMode('verify');
+          setRegPassword('');
+          setLoading(false);
+          arcadeAudio.playLevelUp();
+          return;
         }
       } catch (err: any) {
-        console.warn('Supabase registration error, continuing in local mode:', err);
+        console.warn('Firebase registration error:', err);
+        setLoading(false);
+        arcadeAudio.playAlert();
+        if (err?.code === 'auth/email-already-in-use' || (err?.message && err.message.toLowerCase().includes('email-already-in-use'))) {
+          setErrorMsg('User already exists. Please sign in');
+        } else {
+          setErrorMsg('User already exists. Please sign in');
+        }
+        return;
       }
     }
 
     updateUserProfile({
-      fullName: regFullName || 'Player Hero',
-      email: regEmail.trim() || 'player@cashquest.io',
-      contactNumber: regContact || '+1 (555) 012-3456',
-      guardianContact: regGuardian,
+      fullName: regFullName.trim() || (regEmail.trim() ? regEmail.trim().split('@')[0] : 'User'),
+      email: regEmail.trim(),
       currency: regCurrency,
       currencySymbol: currencySymbols[regCurrency] || '$',
-      isEmailVerified: true,
     });
 
     arcadeAudio.playLevelUp();
-    setSuccessMsg('Account created successfully! Unlocking vault...');
+    setSuccessMsg('Account created successfully!');
     setLoading(false);
     setTimeout(() => {
       setRegPassword('');
@@ -182,11 +214,104 @@ export const AuthScreen: React.FC = () => {
     }, 600);
   };
 
-  const handleForgot = (e: React.FormEvent) => {
+  const handleGoogleSignIn = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    setLoading(true);
+    arcadeAudio.playClick();
+
+    if (isFirebaseConfigured && auth) {
+      try {
+        const provider = new GoogleAuthProvider();
+        const userCred = await signInWithPopup(auth, provider);
+        if (userCred.user) {
+          const email = userCred.user.email || '';
+          const fullName = userCred.user.displayName || (email ? email.split('@')[0] : 'User');
+          
+          try {
+            await setDoc(doc(db, 'users', userCred.user.uid), {
+              fullName,
+              email,
+              currency: 'USD',
+              currencySymbol: '$',
+              isEmailVerified: true,
+              joinedDate: new Date().toISOString().split('T')[0],
+            }, { merge: true });
+          } catch (docErr) {
+            console.warn('Error syncing Google user to Firestore:', docErr);
+          }
+
+          updateUserProfile({
+            email,
+            fullName,
+            id: userCred.user.uid,
+          });
+
+          arcadeAudio.playLevelUp();
+          setSuccessMsg('Google Authentication successful! Entering dashboard...');
+          setTimeout(() => {
+            setIsLoggedIn(true);
+            setLoading(false);
+          }, 500);
+        }
+      } catch (err: any) {
+        console.warn('Google sign-in error:', err);
+        setLoading(false);
+        arcadeAudio.playAlert();
+        if (err?.code === 'auth/popup-closed-by-user') {
+          setErrorMsg('Google Sign-In popup was closed before completing.');
+        } else if (err?.code === 'auth/popup-blocked') {
+          setErrorMsg('Sign-in popup was blocked by your browser. Please allow popups.');
+        } else {
+          setErrorMsg('Google Sign-In failed. Please check Firebase Google provider setup.');
+        }
+      }
+    } else {
+      updateUserProfile({
+        fullName: 'Google User',
+        email: 'user@gmail.com',
+      });
+      arcadeAudio.playLevelUp();
+      setSuccessMsg('Authenticated with Google! Entering dashboard...');
+      setTimeout(() => {
+        setIsLoggedIn(true);
+        setLoading(false);
+      }, 500);
+    }
+  };
+
+  const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!forgotEmail.trim()) {
+      setErrorMsg('Please enter your email address.');
+      arcadeAudio.playAlert();
+      return;
+    }
+    setLoading(true);
     arcadeAudio.playCoin();
-    setSuccessMsg('Password recovery link dispatched to your email!');
-    setTimeout(() => setAuthMode('reset'), 800);
+    if (isFirebaseConfigured && auth) {
+      try {
+        await sendPasswordResetEmail(auth, forgotEmail.trim());
+        setSuccessMsg('Password recovery email dispatched! Check your inbox.');
+      } catch (err: any) {
+        console.warn('Firebase password reset error:', err);
+        setLoading(false);
+        arcadeAudio.playAlert();
+        if (err?.code === 'auth/user-not-found') {
+          setErrorMsg('No account found with this email address.');
+        } else if (err?.code === 'auth/invalid-email') {
+          setErrorMsg('Please enter a valid email address.');
+        } else {
+          setErrorMsg('Password reset request failed. Please check your email.');
+        }
+        return;
+      }
+    } else {
+      setSuccessMsg('Password recovery email dispatched! Check your inbox.');
+    }
+    setLoading(false);
   };
 
   const handleReset = (e: React.FormEvent) => {
@@ -239,6 +364,7 @@ export const AuthScreen: React.FC = () => {
               {authMode === 'register' && 'NEW ACCOUNT SIGN UP'}
               {authMode === 'forgot' && 'ACCOUNT RECOVERY'}
               {authMode === 'reset' && 'SET NEW PASSWORD'}
+              {authMode === 'verify' && 'EMAIL VERIFICATION'}
             </div>
 
             <div className="flex gap-1.5">
@@ -344,6 +470,26 @@ export const AuthScreen: React.FC = () => {
                 <ArrowRight className="w-5 h-5 stroke-[3]" />
               </button>
 
+              <div className="relative my-3 text-center">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/20"></div></div>
+                <span className="relative bg-[#16213E] px-2 text-[10px] font-pixel text-zinc-400 uppercase">OR</span>
+              </div>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleGoogleSignIn}
+                className="comic-btn w-full bg-white text-black font-comic text-sm py-2.5 font-bold uppercase flex items-center justify-center gap-2.5 hover:bg-zinc-100 border-2 border-black shadow-[3px_3px_0px_#000]"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>CONTINUE WITH GOOGLE</span>
+              </button>
+
               <div className="text-center pt-3 border-t-2 border-black/40 text-xs font-mono text-zinc-400">
                 Don't have an account yet?{' '}
                 <button
@@ -396,43 +542,23 @@ export const AuthScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-pixel text-[#F9ED69] uppercase mb-1">
-                    CONTACT NUMBER
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
-                    <input
-                      type="text"
-                      required
-                      autoComplete="off"
-                      placeholder="+1 (555) 012-3456"
-                      value={regContact}
-                      onChange={(e) => setRegContact(e.target.value)}
-                      className="w-full bg-black border-3 border-white/20 pl-8 pr-2 py-2 text-xs text-white font-mono rounded outline-none focus:border-[#F9ED69]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-pixel text-[#F9ED69] uppercase mb-1">
-                    CURRENCY
-                  </label>
-                  <select
-                    value={regCurrency}
-                    onChange={(e) => setRegCurrency(e.target.value)}
-                    className="w-full bg-black border-3 border-white/20 px-2 py-2 text-xs text-white font-mono rounded outline-none focus:border-[#F9ED69]"
-                  >
-                    <option value="USD">USD ($ - Dollar)</option>
-                    <option value="INR">INR (₹ - Rupee)</option>
-                    <option value="EUR">EUR (€ - Euro)</option>
-                    <option value="GBP">GBP (£ - Pound)</option>
-                    <option value="JPY">JPY (¥ - Yen)</option>
-                    <option value="CAD">CAD (CA$)</option>
-                    <option value="AUD">AUD (A$)</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[11px] font-pixel text-[#F9ED69] uppercase mb-1">
+                  CURRENCY
+                </label>
+                <select
+                  value={regCurrency}
+                  onChange={(e) => setRegCurrency(e.target.value)}
+                  className="w-full bg-black border-3 border-white/20 px-2 py-2 text-xs text-white font-mono rounded outline-none focus:border-[#F9ED69]"
+                >
+                  <option value="USD">USD ($ - Dollar)</option>
+                  <option value="INR">INR (₹ - Rupee)</option>
+                  <option value="EUR">EUR (€ - Euro)</option>
+                  <option value="GBP">GBP (£ - Pound)</option>
+                  <option value="JPY">JPY (¥ - Yen)</option>
+                  <option value="CAD">CAD (CA$)</option>
+                  <option value="AUD">AUD (A$)</option>
+                </select>
               </div>
 
               <div>
@@ -469,6 +595,26 @@ export const AuthScreen: React.FC = () => {
                 className="comic-btn w-full bg-[#00D2FF] text-black font-comic text-lg py-2.5 font-bold uppercase tracking-wider mt-2 hover:bg-[#33ddff]"
               >
                 {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+              </button>
+
+              <div className="relative my-2.5 text-center">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/20"></div></div>
+                <span className="relative bg-[#16213E] px-2 text-[10px] font-pixel text-zinc-400 uppercase">OR</span>
+              </div>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleGoogleSignIn}
+                className="comic-btn w-full bg-white text-black font-comic text-sm py-2.5 font-bold uppercase flex items-center justify-center gap-2.5 hover:bg-zinc-100 border-2 border-black shadow-[3px_3px_0px_#000]"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>CONTINUE WITH GOOGLE</span>
               </button>
 
               <div className="text-center pt-2 border-t-2 border-black/40 text-xs font-mono text-zinc-400">
@@ -590,6 +736,35 @@ export const AuthScreen: React.FC = () => {
                 UPDATE PASSWORD
               </button>
             </form>
+          )}
+
+          {/* 5. EMAIL VERIFICATION REQUIRED SCREEN */}
+          {authMode === 'verify' && (
+            <div className="space-y-5 text-center py-2">
+              <div className="w-14 h-14 bg-[#00D2FF]/10 border-2 border-[#00D2FF] rounded-full flex items-center justify-center mx-auto text-[#00D2FF]">
+                <MailCheck className="w-7 h-7" />
+              </div>
+
+              <div className="p-4 bg-black/40 border-2 border-white/10 rounded-lg">
+                <p className="text-sm font-mono text-zinc-200 leading-relaxed">
+                  We have sent you a verification email to <span className="text-[#F9ED69] font-bold">{unverifiedEmail}</span>. Please verify it and log in.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  arcadeAudio.playClick();
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                  setAuthMode('login');
+                }}
+                className="comic-btn w-full bg-[#F9ED69] text-black font-comic text-xl py-3 font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#ffe066]"
+              >
+                <span>LOGIN</span>
+                <ArrowRight className="w-5 h-5 stroke-[3]" />
+              </button>
+            </div>
           )}
 
         </div>
