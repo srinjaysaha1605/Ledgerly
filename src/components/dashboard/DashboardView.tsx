@@ -37,6 +37,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction } from '../../types';
 import { arcadeAudio } from '../../utils/audio';
+import { getLocalYearMonth } from '../../utils/dateUtils';
 
 interface DashboardViewProps {
   onOpenQuickAdd: (type?: 'income' | 'expense') => void;
@@ -66,7 +67,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Metrics Calculations
   const totalBalance = accounts.reduce((sum, a) => sum + a.currentBalance, 0);
 
-  const currentMonth = new Date().toISOString().substring(0, 7);
+  const currentMonth = getLocalYearMonth(new Date());
   const monthlyIncome = transactions
     .filter(t => t.type === 'income' && t.date.startsWith(currentMonth))
     .reduce((sum, t) => sum + t.amount, 0);
@@ -91,7 +92,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     
     for (let i = 5; i >= 0; i--) {
       const dateObj = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const yearMonthKey = dateObj.toISOString().substring(0, 7);
+      const yearMonthKey = getLocalYearMonth(dateObj);
       const monthName = dateObj.toLocaleString('en-US', { month: 'short' });
 
       let monthInc = 0;
