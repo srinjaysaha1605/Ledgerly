@@ -1,4 +1,3 @@
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { 
   Lock, 
@@ -30,6 +29,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export const AuthScreen: React.FC = () => {
   const { 
@@ -229,25 +229,14 @@ export const AuthScreen: React.FC = () => {
           const fullName = userCred.user.displayName || (email ? email.split('@')[0] : 'User');
           
           try {
-            const userDocRef = doc(db, 'users', userCred.user.uid);
-            const userSnap = await getDoc(userDocRef);
-            
-            if (!userSnap.exists()) {
-              await setDoc(userDocRef, {
-                fullName,
-                email,
-                currency: 'USD',
-                currencySymbol: '$',
-                isEmailVerified: true,
-                joinedDate: new Date().toISOString().split('T')[0],
-              });
-            } else {
-              await setDoc(userDocRef, {
-                fullName,
-                email,
-                isEmailVerified: true,
-              }, { merge: true });
-            }
+            await setDoc(doc(db, 'users', userCred.user.uid), {
+              fullName,
+              email,
+              currency: 'USD',
+              currencySymbol: '$',
+              isEmailVerified: true,
+              joinedDate: new Date().toISOString().split('T')[0],
+            }, { merge: true });
           } catch (docErr) {
             console.warn('Error syncing Google user to Firestore:', docErr);
           }
@@ -341,36 +330,36 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F0F1B] text-white flex flex-col justify-center items-center p-4 relative overflow-hidden bg-bento-grid">
+    <div className="min-h-screen bg-[#0F0F1B] text-white flex flex-col justify-center items-center p-2.5 sm:p-4 relative overflow-hidden bg-bento-grid">
       
       {/* Background Decor Shapes */}
       <div className="absolute top-10 left-10 w-32 h-32 bg-[#E94560]/10 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-40 h-40 bg-[#00D2FF]/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md my-8">
+      <div className="w-full max-w-md my-4 sm:my-8">
         
         {/* Brand Banner */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-[#E94560] border-4 border-black comic-btn flex items-center justify-center text-black font-pixel shadow-[4px_4px_0px_#000] rotate-3">
-              <span className="text-2xl font-black italic text-black">$</span>
+        <div className="text-center mb-4 sm:mb-6">
+          <div className="inline-flex items-center justify-center gap-2 sm:gap-3 mb-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#E94560] border-3 sm:border-4 border-black comic-btn flex items-center justify-center text-black font-pixel shadow-[3px_3px_0px_#000] rotate-3">
+              <span className="text-xl sm:text-2xl font-black italic text-black">$</span>
             </div>
-            <div className="font-comic text-4xl text-[#F9ED69] drop-shadow-[3px_3px_0px_#000] uppercase italic tracking-wider">
+            <div className="font-comic text-3xl sm:text-4xl text-[#F9ED69] drop-shadow-[3px_3px_0px_#000] uppercase italic tracking-wider">
               Ledger<span className="text-[#00D2FF]">ly</span>
             </div>
           </div>
-          <p className="text-xs font-pixel text-zinc-400 tracking-widest uppercase">
+          <p className="text-[10px] sm:text-xs font-pixel text-zinc-400 tracking-widest uppercase">
             RETRO ARCADE PERSONAL FINANCE TRACKER
           </p>
         </div>
 
         {/* Bento Main Card */}
-        <div className="comic-box bg-[#16213E] border-4 border-black p-6 shadow-[8px_8px_0px_#000000] relative">
+        <div className="comic-box bg-[#16213E] border-3 sm:border-4 border-black p-3.5 sm:p-6 shadow-[6px_6px_0px_#000000] sm:shadow-[8px_8px_0px_#000000] relative">
           
           {/* Card Header & Tab Switchers */}
-          <div className="flex items-center justify-between border-b-4 border-black pb-4 mb-5">
-            <div className="font-comic text-2xl text-[#F9ED69] flex items-center gap-2">
-              <Zap className="w-6 h-6 text-[#00D2FF]" />
+          <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between border-b-3 sm:border-b-4 border-black pb-3 sm:pb-4 mb-4 sm:mb-5 gap-2">
+            <div className="font-comic text-xl sm:text-2xl text-[#F9ED69] flex items-center gap-2">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D2FF]" />
               {authMode === 'login' && 'ACCOUNT LOGIN'}
               {authMode === 'register' && 'NEW ACCOUNT SIGN UP'}
               {authMode === 'forgot' && 'ACCOUNT RECOVERY'}
@@ -378,11 +367,11 @@ export const AuthScreen: React.FC = () => {
               {authMode === 'verify' && 'EMAIL VERIFICATION'}
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 self-end xs:self-auto">
               <button
                 type="button"
                 onClick={() => { arcadeAudio.playClick(); setAuthMode('login'); setErrorMsg(''); setSuccessMsg(''); }}
-                className={`comic-btn px-3 py-1 font-comic text-xs uppercase ${
+                className={`comic-btn px-2.5 sm:px-3 py-1 font-comic text-xs uppercase ${
                   authMode === 'login' ? 'bg-[#F9ED69] text-black font-bold' : 'bg-[#1A1A2E] text-zinc-300'
                 }`}
               >
@@ -391,7 +380,7 @@ export const AuthScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { arcadeAudio.playClick(); setAuthMode('register'); setErrorMsg(''); setSuccessMsg(''); }}
-                className={`comic-btn px-3 py-1 font-comic text-xs uppercase ${
+                className={`comic-btn px-2.5 sm:px-3 py-1 font-comic text-xs uppercase ${
                   authMode === 'register' ? 'bg-[#00D2FF] text-black font-bold' : 'bg-[#1A1A2E] text-zinc-300'
                 }`}
               >
