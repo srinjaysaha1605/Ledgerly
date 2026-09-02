@@ -14,6 +14,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { getLocalYearMonth } from '../../utils/dateUtils';
 import { Budget, Goal } from '../../types';
 import { arcadeAudio } from '../../utils/audio';
 
@@ -35,7 +36,7 @@ export const BudgetsView: React.FC = () => {
     user 
   } = useFinance();
 
-  const currentMonth = new Date().toISOString().substring(0, 7);
+  const currentMonth = getLocalYearMonth(new Date());
 
   // Budget Modal State
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
