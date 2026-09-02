@@ -1,3 +1,4 @@
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { 
   Lock, 
@@ -29,7 +30,6 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 
 export const AuthScreen: React.FC = () => {
   const { 
@@ -229,14 +229,25 @@ export const AuthScreen: React.FC = () => {
           const fullName = userCred.user.displayName || (email ? email.split('@')[0] : 'User');
           
           try {
-            await setDoc(doc(db, 'users', userCred.user.uid), {
-              fullName,
-              email,
-              currency: 'USD',
-              currencySymbol: '$',
-              isEmailVerified: true,
-              joinedDate: new Date().toISOString().split('T')[0],
-            }, { merge: true });
+            const userDocRef = doc(db, 'users', userCred.user.uid);
+            const userSnap = await getDoc(userDocRef);
+            
+            if (!userSnap.exists()) {
+              await setDoc(userDocRef, {
+                fullName,
+                email,
+                currency: 'USD',
+                currencySymbol: '$',
+                isEmailVerified: true,
+                joinedDate: new Date().toISOString().split('T')[0],
+              });
+            } else {
+              await setDoc(userDocRef, {
+                fullName,
+                email,
+                isEmailVerified: true,
+              }, { merge: true });
+            }
           } catch (docErr) {
             console.warn('Error syncing Google user to Firestore:', docErr);
           }
