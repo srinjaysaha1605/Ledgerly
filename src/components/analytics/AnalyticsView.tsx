@@ -69,15 +69,39 @@ export const AnalyticsView: React.FC = () => {
     }
   });
 
-  // Income vs Expense Comparison Chart Data
-  const comparisonData = [
-    { name: 'Feb', Income: 3200, Expense: 2100 },
-    { name: 'Mar', Income: 3400, Expense: 2400 },
-    { name: 'Apr', Income: 3100, Expense: 1950 },
-    { name: 'May', Income: 4100, Expense: 2800 },
-    { name: 'Jun', Income: 3800, Expense: 2300 },
-    { name: 'Jul', Income: Math.round((totalIncome || 4300) * 100) / 100, Expense: Math.round((totalExpense || 2182) * 100) / 100 },
-  ];
+  const currentMonthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+  // Income vs Expense Comparison Chart Data derived directly from User Transactions
+  const comparisonData = React.useMemo(() => {
+    const monthsData = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const dateObj = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const yearMonthKey = dateObj.toISOString().substring(0, 7);
+      const monthName = dateObj.toLocaleString('en-US', { month: 'short' });
+
+      let monthInc = 0;
+      let monthExp = 0;
+
+      transactions.forEach(t => {
+        if (t.date && t.date.startsWith(yearMonthKey)) {
+          if (t.type === 'income') {
+            monthInc += t.amount;
+          } else if (t.type === 'expense') {
+            monthExp += t.amount;
+          }
+        }
+      });
+
+      monthsData.push({
+        name: monthName,
+        Income: Math.round(monthInc * 100) / 100,
+        Expense: Math.round(monthExp * 100) / 100,
+      });
+    }
+    return monthsData;
+  }, [transactions]);
 
   // Budget vs Actual Performance Chart Data
   const budgetPerformanceData = budgets.map(b => {
@@ -126,13 +150,13 @@ export const AnalyticsView: React.FC = () => {
         <div className="comic-box bg-zinc-900 p-4 border-l-8 border-l-green-400">
           <div className="font-pixel text-[9px] text-zinc-400 uppercase">TOTAL MONTHLY INCOME</div>
           <div className="font-comic text-2xl font-bold text-green-400 mt-1">{formatCurrency(totalIncome)}</div>
-          <div className="text-[10px] font-mono text-zinc-400 mt-1">July 2026 Inflow</div>
+          <div className="text-[10px] font-mono text-zinc-400 mt-1">{currentMonthLabel} Inflow</div>
         </div>
 
         <div className="comic-box bg-zinc-900 p-4 border-l-8 border-l-red-400">
           <div className="font-pixel text-[9px] text-zinc-400 uppercase">TOTAL MONTHLY EXPENSES</div>
           <div className="font-comic text-2xl font-bold text-red-400 mt-1">{formatCurrency(totalExpense)}</div>
-          <div className="text-[10px] font-mono text-zinc-400 mt-1">July 2026 Outflow</div>
+          <div className="text-[10px] font-mono text-zinc-400 mt-1">{currentMonthLabel} Outflow</div>
         </div>
 
         <div className="comic-box bg-zinc-900 p-4 border-l-8 border-l-yellow-400">
