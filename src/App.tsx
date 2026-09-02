@@ -49,13 +49,13 @@ const MainLayout: React.FC = () => {
       <Navbar onOpenQuickAdd={() => handleOpenQuickAdd('expense')} />
 
       {/* Body Area with Sidebar + Active View */}
-      <div className="flex-1 max-w-7xl w-full mx-auto flex flex-col md:flex-row">
+      <div className="flex-1 max-w-7xl w-full mx-auto flex flex-col md:flex-row min-w-0 overflow-x-hidden">
         
         {/* Navigation Sidebar */}
         <Sidebar />
 
         {/* View Stage */}
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden min-h-[calc(100vh-80px)]">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden min-h-[calc(100vh-80px)] min-w-0">
           {activeView === 'dashboard' && (
             <DashboardView 
               onOpenQuickAdd={handleOpenQuickAdd} 
