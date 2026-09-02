@@ -22,13 +22,13 @@ export const Sidebar: React.FC = () => {
     .reduce((sum, a) => sum + a.currentBalance, 0);
 
   const navItems = [
-    { id: 'dashboard', label: 'DASHBOARD', icon: LayoutDashboard, badge: 'MAIN' },
+    { id: 'dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
     { id: 'accounts', label: 'ACCOUNTS', icon: CreditCard, count: accounts.length },
     { id: 'transactions', label: 'TRANSACTIONS', icon: ArrowLeftRight, count: transactions.length },
-    { id: 'budgets', label: 'BUDGETS & GOALS', icon: Target, badge: 'TARGETS' },
-    { id: 'analytics', label: 'ANALYTICS', icon: PieChart, badge: 'REPORTS' },
-    { id: 'calendar', label: 'CALENDAR', icon: CalendarIcon, badge: 'PLANS' },
-    { id: 'profile', label: 'PROFILE', icon: User, badge: 'ACCOUNT' },
+    { id: 'budgets', label: 'BUDGETS & GOALS', icon: Target },
+    { id: 'analytics', label: 'ANALYTICS', icon: PieChart },
+    { id: 'calendar', label: 'CALENDAR', icon: CalendarIcon },
+    { id: 'profile', label: 'PROFILE', icon: User },
   ];
 
   return (
@@ -56,14 +56,6 @@ export const Sidebar: React.FC = () => {
               >
                 <Icon className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${isActive ? 'text-black' : 'text-[#00D2FF]'}`} />
                 <span>{item.label}</span>
-
-                {item.badge && (
-                  <span className={`ml-auto hidden md:inline-block text-[9px] font-pixel px-1.5 py-0.5 rounded border border-black truncate max-w-[60px] ${
-                    isActive ? 'bg-black text-[#00D2FF]' : 'bg-[#16213E] text-zinc-300'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
 
                 {item.count !== undefined && (
                   <span className={`ml-1 md:ml-auto text-[10px] sm:text-xs font-mono px-1.5 rounded ${
