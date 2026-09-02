@@ -110,15 +110,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
         </div>
 
         {/* Actions & Utilities */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
           
           {/* Quick Add Button */}
           <button
             onClick={() => { arcadeAudio.playCoin(); onOpenQuickAdd(); }}
-            className="comic-btn bg-[#F9ED69] text-black font-comic text-xs sm:text-base px-2 sm:px-4 py-1 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 font-bold uppercase tracking-wide hover:bg-[#ffe066]"
+            title="Add New Transaction"
+            className="comic-btn bg-[#F9ED69] text-black font-comic text-xs sm:text-sm p-1.5 sm:px-3 sm:py-1.5 flex items-center gap-1 font-bold uppercase tracking-wide hover:bg-[#ffe066]"
           >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-            <span className="hidden sm:inline">QUICK ADD</span>
+            <Plus className="w-4 h-4 sm:w-4 sm:h-4 stroke-[3]" />
+            <span className="hidden md:inline">QUICK ADD</span>
           </button>
 
           {/* Sound Toggle */}
@@ -127,7 +128,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
             title={soundEnabled ? "Disable Arcade Audio" : "Enable Arcade Audio"}
             className="comic-btn bg-[#16213E] text-zinc-100 p-1.5 sm:p-2 hover:bg-[#1A1A2E] hover:text-[#F9ED69]"
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94560]" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-4 sm:h-4" /> : <VolumeX className="w-4 h-4 sm:w-4 sm:h-4 text-[#E94560]" />}
           </button>
 
           {/* Currency Indicator / Quick Switcher */}
@@ -140,10 +141,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
                 setProfileDropdownOpen(false);
               }}
               title="Quick Change Currency"
-              className="comic-btn bg-[#16213E] text-[#00D2FF] px-1.5 sm:px-2.5 py-1 sm:py-1.5 flex items-center gap-1 text-[11px] sm:text-xs font-bold font-mono hover:bg-[#1A1A2E]"
+              className="comic-btn bg-[#16213E] text-[#00D2FF] px-1.5 sm:px-2 py-1 sm:py-1.5 flex items-center gap-0.5 sm:gap-1 text-xs font-bold font-mono hover:bg-[#1A1A2E]"
             >
               <span className="font-bold text-[#F9ED69]">{user.currencySymbol || "$"}</span>
-              <span className="hidden xs:inline">{user.currency}</span>
+              <span className="hidden md:inline">{user.currency}</span>
               <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-zinc-300" />
             </button>
 
@@ -181,11 +182,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
           <div className="relative">
             <button
               onClick={() => { arcadeAudio.playClick(); setNotificationsOpen(!notificationsOpen); setProfileDropdownOpen(false); }}
-              className="comic-btn bg-[#16213E] text-zinc-100 p-2 relative hover:bg-[#1A1A2E] hover:text-[#F9ED69]"
+              className="comic-btn bg-[#16213E] text-zinc-100 p-1.5 sm:p-2 relative hover:bg-[#1A1A2E] hover:text-[#F9ED69]"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-[#E94560] text-white font-pixel text-[9px] px-1.5 py-0.5 rounded-full border-2 border-black animate-pulse">
+                <span className="absolute -top-1.5 -right-1.5 bg-[#E94560] text-white font-pixel text-[8px] px-1 py-0.2 rounded-full border border-black animate-pulse">
                   {unreadCount}
                 </span>
               )}
@@ -277,15 +278,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAdd }) => {
             {isLoggedIn ? (
               <button
                 onClick={() => { arcadeAudio.playClick(); setProfileDropdownOpen(!profileDropdownOpen); setNotificationsOpen(false); }}
-                className="comic-btn bg-zinc-800 px-2.5 py-1 flex items-center gap-2 hover:bg-zinc-700 border-2 border-black shadow-[2px_2px_0px_#000]"
+                className="comic-btn bg-zinc-800 p-1 sm:px-2.5 sm:py-1 flex items-center gap-1.5 hover:bg-zinc-700 border-2 border-black shadow-[2px_2px_0px_#000]"
               >
-                <div className="w-7 h-7 rounded bg-[#F9ED69] text-black border border-black flex items-center justify-center shrink-0 font-comic font-bold text-xs">
-                  <User className="w-4 h-4 text-black" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded bg-[#F9ED69] text-black border border-black flex items-center justify-center shrink-0 font-comic font-bold text-xs">
+                  <User className="w-3.5 h-3.5 text-black" />
                 </div>
-                <span className="font-comic text-sm font-bold text-[#F9ED69] max-w-[120px] truncate">
+                <span className="font-comic text-xs sm:text-sm font-bold text-[#F9ED69] max-w-[100px] truncate hidden md:inline-block">
                   {displayName}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                <ChevronDown className="w-3 h-3 text-zinc-400 hidden sm:block" />
               </button>
             ) : (
               <button
