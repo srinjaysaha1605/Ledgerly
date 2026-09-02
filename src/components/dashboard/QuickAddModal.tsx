@@ -12,6 +12,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { getLocalDateString } from '../../utils/dateUtils';
 import { TransactionType } from '../../types';
 import { arcadeAudio } from '../../utils/audio';
 
@@ -35,7 +36,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   } = useFinance();
 
   const [type, setType] = useState<TransactionType>(defaultType);
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(getLocalDateString());
   const [amount, setAmount] = useState<string>('');
   const [title, setTitle] = useState<string>('');
   const [category, setCategory] = useState<string>('');
