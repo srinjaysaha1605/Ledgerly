@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -110,15 +110,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     t.category.toLowerCase().includes(txSearch.toLowerCase())
   ).slice(0, 6);
 
-  // Cash Flow Chart Data (Last 6 Months Simulation + Current)
-  const chartData = [
-    { month: 'Feb', income: 3200, expense: 2100 },
-    { month: 'Mar', income: 3400, expense: 2400 },
-    { month: 'Apr', income: 3100, expense: 1950 },
-    { month: 'May', income: 4100, expense: 2800 },
-    { month: 'Jun', income: 3800, expense: 2300 },
-    { month: 'Jul', income: Math.round((monthlyIncome || 4300) * 100) / 100, expense: Math.round((monthlyExpense || 2182.78) * 100) / 100 },
-  ];
+  // Dynamic Cash Flow Chart Data derived from real transactions over the last 6 months
+  const chartData = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStr = d.toISOString().slice(0, 7); // Format: 'YYYY-MM'
+      const label = d.toLocaleString('en-US', { month: 'short' });
+      
+      const monthTxs = transactions.filter(t => t.date && t.date.startsWith(monthStr));
+      const income = monthTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+      const expense = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+      
+      months.push({
+        month: label,
+        income: Math.round(income * 100) / 100,
+        expense: Math.round(expense * 100) / 100,
+      });
+    }
+    return months;
+  }, [transactions]);
 
   // Category Expense Donut Chart Data
   const expenseCatTotals: Record<string, number> = {};
