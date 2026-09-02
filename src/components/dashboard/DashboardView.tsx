@@ -165,7 +165,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               TOTAL BALANCE
             </span>
             <div className="w-8 h-8 bg-black border-2 border-black flex items-center justify-center text-[#00D2FF] font-pixel font-bold shadow-[2px_2px_0px_#000]">
-              $
+              {user.currencySymbol || '$'}
             </div>
           </div>
           <div className="font-comic text-3xl font-black text-black tracking-wide">
