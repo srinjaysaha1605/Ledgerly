@@ -26,6 +26,7 @@ import {
   ArrowDownRight 
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { getLocalYearMonth } from '../../utils/dateUtils';
 
 export const AnalyticsView: React.FC = () => {
   const { 
@@ -36,7 +37,7 @@ export const AnalyticsView: React.FC = () => {
     user 
   } = useFinance();
 
-  const currentMonth = new Date().toISOString().substring(0, 7);
+  const currentMonth = getLocalYearMonth(new Date());
 
   // Totals
   const currentMonthTxs = transactions.filter(t => t.date.startsWith(currentMonth));
@@ -78,7 +79,7 @@ export const AnalyticsView: React.FC = () => {
     
     for (let i = 5; i >= 0; i--) {
       const dateObj = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const yearMonthKey = dateObj.toISOString().substring(0, 7);
+      const yearMonthKey = getLocalYearMonth(dateObj);
       const monthName = dateObj.toLocaleString('en-US', { month: 'short' });
 
       let monthInc = 0;
