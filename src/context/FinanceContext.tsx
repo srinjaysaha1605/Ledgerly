@@ -22,6 +22,7 @@ import {
   initialSmartInsights 
 } from '../data/initialData';
 import { arcadeAudio } from '../utils/audio';
+import { getLocalYearMonth, getLocalDateString } from '../utils/dateUtils';
 import { fetchGeminiInsights, generateRealLedgerInsights, askGeminiAdvisor } from '../services/aiAdvisor';
 import { auth, db, isFirebaseConfigured } from '../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -410,7 +411,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Budget alert check
   const checkBudgetAlerts = (updatedTxs: Transaction[], category: string) => {
-    const currentMonth = new Date().toISOString().substring(0, 7);
+    const currentMonth = getLocalYearMonth();
     const budget = budgets.find(b => b.category === category);
     if (!budget) return;
 
@@ -426,7 +427,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         title: `⚠️ BUDGET CAP WARNING: ${category.toUpperCase()}`,
         message: `You spent ${formatCurrency(monthSpent)} (${utilizationPct.toFixed(0)}%) of your ${formatCurrency(budget.monthlyLimit)} monthly limit!`,
         type: 'warning',
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateString(),
         read: false,
       };
 
