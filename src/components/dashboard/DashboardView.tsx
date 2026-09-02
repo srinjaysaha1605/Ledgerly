@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -55,7 +55,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     insights, 
     isGeneratingInsights,
     refreshInsights,
-    askAdvisor,
     setActiveView, 
     deleteTransaction, 
     formatCurrency,
@@ -63,31 +62,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   } = useFinance();
 
   const [txSearch, setTxSearch] = useState('');
-  const [advisorQuery, setAdvisorQuery] = useState('');
-  const [advisorAnswer, setAdvisorAnswer] = useState<string | null>(null);
-  const [isAskingAdvisor, setIsAskingAdvisor] = useState(false);
-  const [advisorError, setAdvisorError] = useState<string | null>(null);
-  const [showAdvisorChat, setShowAdvisorChat] = useState(false);
-
-  const handleAskAdvisor = async (customQuestion?: string) => {
-    const questionToAsk = customQuestion || advisorQuery;
-    if (!questionToAsk.trim()) return;
-
-    arcadeAudio.playClick();
-    setIsAskingAdvisor(true);
-    setAdvisorError(null);
-    setShowAdvisorChat(true);
-
-    try {
-      const answer = await askAdvisor(questionToAsk);
-      setAdvisorAnswer(answer);
-      arcadeAudio.playLevelUp();
-    } catch (err: any) {
-      setAdvisorError(err.message || 'Advisor unavailable. Please retry.');
-    } finally {
-      setIsAskingAdvisor(false);
-    }
-  };
 
   // Metrics Calculations
   const totalBalance = accounts.reduce((sum, a) => sum + a.currentBalance, 0);
@@ -110,28 +84,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     t.category.toLowerCase().includes(txSearch.toLowerCase())
   ).slice(0, 6);
 
-  // Dynamic Cash Flow Chart Data derived from real transactions over the last 6 months
-  const chartData = useMemo(() => {
-    const months = [];
-    const now = new Date();
-    
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthStr = d.toISOString().slice(0, 7); // Format: 'YYYY-MM'
-      const label = d.toLocaleString('en-US', { month: 'short' });
-      
-      const monthTxs = transactions.filter(t => t.date && t.date.startsWith(monthStr));
-      const income = monthTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-      const expense = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-      
-      months.push({
-        month: label,
-        income: Math.round(income * 100) / 100,
-        expense: Math.round(expense * 100) / 100,
-      });
-    }
-    return months;
-  }, [transactions]);
+  // Cash Flow Chart Data (Last 6 Months Simulation + Current)
+  const chartData = [
+    { month: 'Feb', income: 3200, expense: 2100 },
+    { month: 'Mar', income: 3400, expense: 2400 },
+    { month: 'Apr', income: 3100, expense: 1950 },
+    { month: 'May', income: 4100, expense: 2800 },
+    { month: 'Jun', income: 3800, expense: 2300 },
+    { month: 'Jul', income: Math.round((monthlyIncome || 4300) * 100) / 100, expense: Math.round((monthlyExpense || 2182.78) * 100) / 100 },
+  ];
 
   // Category Expense Donut Chart Data
   const expenseCatTotals: Record<string, number> = {};
@@ -165,7 +126,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               TOTAL BALANCE
             </span>
             <div className="w-8 h-8 bg-black border-2 border-black flex items-center justify-center text-[#00D2FF] font-pixel font-bold shadow-[2px_2px_0px_#000]">
-              {user.currencySymbol || '$'}
+              $
             </div>
           </div>
           <div className="font-comic text-3xl font-black text-black tracking-wide">
@@ -238,25 +199,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center gap-3">
             <div className="font-comic text-2xl text-yellow-400 flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse" />
-              SMART FINANCIAL INSIGHTS & ADVISOR
+              SMART FINANCIAL INSIGHTS
             </div>
             <span className="font-pixel text-[9px] bg-cyan-400 text-black px-2 py-1 border border-black font-bold flex items-center gap-1 shadow-[2px_2px_0px_#000]">
-              <Bot className="w-3 h-3" />
-              SMART ADVISOR
+              <Zap className="w-3 h-3" />
+              LEDGER ANALYSIS
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                arcadeAudio.playClick();
-                setShowAdvisorChat(!showAdvisorChat);
-              }}
-              className="font-pixel text-[10px] bg-pink-500 hover:bg-pink-400 text-white px-3 py-1.5 border-2 border-black font-bold shadow-[2px_2px_0px_#000] flex items-center gap-1.5 transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-            >
-              <Bot className="w-3.5 h-3.5" />
-              {showAdvisorChat ? 'HIDE ADVISOR CHAT' : 'ASK ADVISOR'}
-            </button>
             <button
               disabled={isGeneratingInsights}
               onClick={() => {
@@ -307,95 +258,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           ))}
         </div>
-
-        {/* Interactive Ask AI Advisor Drawer / Console */}
-        {showAdvisorChat && (
-          <div className="mt-4 p-4 bg-black border-2 border-yellow-400 rounded shadow-[4px_4px_0px_#000]">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800 mb-3">
-              <div className="flex items-center gap-2 text-yellow-400 font-comic text-base font-bold">
-                <Bot className="w-5 h-5 text-yellow-400 animate-bounce" />
-                ASK LEDGERLY AI FINANCIAL ADVISOR
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400">Context: Real-time ledger, budgets & accounts</span>
-            </div>
-
-            {/* Quick Prompt Pills */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="text-[10px] font-pixel text-zinc-400 self-center">QUICK QUERIES:</span>
-              {[
-                "How can I increase my monthly savings rate?",
-                "Analyze my recurring subscriptions",
-                "What is my highest spending category?",
-                "Am I on track to meet my active goals?"
-              ].map((pill, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setAdvisorQuery(pill);
-                    handleAskAdvisor(pill);
-                  }}
-                  className="text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 text-cyan-300 px-2.5 py-1 rounded border border-zinc-700 hover:border-cyan-400 transition-colors cursor-pointer"
-                >
-                  {pill}
-                </button>
-              ))}
-            </div>
-
-            {/* Input Form */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={advisorQuery}
-                onChange={(e) => setAdvisorQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAskAdvisor();
-                }}
-                placeholder="Ask any question about your spending, accounts, savings, or budgets..."
-                className="flex-1 bg-zinc-950 border-2 border-zinc-700 focus:border-yellow-400 text-white px-3 py-2 text-xs font-mono rounded outline-none placeholder:text-zinc-500"
-              />
-              <button
-                disabled={isAskingAdvisor || !advisorQuery.trim()}
-                onClick={() => handleAskAdvisor()}
-                className="font-pixel text-xs bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 text-black px-4 py-2 border-2 border-black font-bold shadow-[2px_2px_0px_#000] flex items-center gap-1.5 cursor-pointer"
-              >
-                {isAskingAdvisor ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                {isAskingAdvisor ? 'THINKING...' : 'ADVISE ME'}
-              </button>
-            </div>
-
-            {/* Advisor Error Output */}
-            {advisorError && (
-              <div className="mt-3 p-3 bg-red-950/80 border border-red-500 text-red-200 text-xs font-mono rounded">
-                ⚠️ {advisorError}
-              </div>
-            )}
-
-            {/* Advisor Answer Output */}
-            {advisorAnswer && (
-              <div className="mt-3 p-4 bg-zinc-950 border-2 border-cyan-400/80 rounded shadow-[3px_3px_0px_#06b6d4] animate-fadeIn">
-                <div className="flex items-center justify-between mb-2 pb-1 border-b border-zinc-800">
-                  <div className="flex items-center gap-1.5 text-xs font-pixel text-cyan-400">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    GEMINI ADVISOR RECOMMENDATION
-                  </div>
-                  <button
-                    onClick={() => setAdvisorAnswer(null)}
-                    className="text-[10px] font-mono text-zinc-400 hover:text-white"
-                  >
-                    DISMISS
-                  </button>
-                </div>
-                <div className="text-xs text-zinc-200 font-sans leading-relaxed whitespace-pre-line">
-                  {advisorAnswer}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Main Charts & Controls Section */}
