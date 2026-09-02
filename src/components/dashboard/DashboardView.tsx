@@ -84,15 +84,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     t.category.toLowerCase().includes(txSearch.toLowerCase())
   ).slice(0, 6);
 
-  // Cash Flow Chart Data (Last 6 Months Simulation + Current)
-  const chartData = [
-    { month: 'Feb', income: 3200, expense: 2100 },
-    { month: 'Mar', income: 3400, expense: 2400 },
-    { month: 'Apr', income: 3100, expense: 1950 },
-    { month: 'May', income: 4100, expense: 2800 },
-    { month: 'Jun', income: 3800, expense: 2300 },
-    { month: 'Jul', income: Math.round((monthlyIncome || 4300) * 100) / 100, expense: Math.round((monthlyExpense || 2182.78) * 100) / 100 },
-  ];
+  // Real Dynamic Cash Flow Chart Data derived directly from User Transactions (Last 6 Months)
+  const chartData = React.useMemo(() => {
+    const monthsData = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const dateObj = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const yearMonthKey = dateObj.toISOString().substring(0, 7);
+      const monthName = dateObj.toLocaleString('en-US', { month: 'short' });
+
+      let monthInc = 0;
+      let monthExp = 0;
+
+      transactions.forEach(t => {
+        if (t.date && t.date.startsWith(yearMonthKey)) {
+          if (t.type === 'income') {
+            monthInc += t.amount;
+          } else if (t.type === 'expense') {
+            monthExp += t.amount;
+          }
+        }
+      });
+
+      monthsData.push({
+        month: monthName,
+        income: Math.round(monthInc * 100) / 100,
+        expense: Math.round(monthExp * 100) / 100,
+      });
+    }
+    return monthsData;
+  }, [transactions]);
 
   // Category Expense Donut Chart Data
   const expenseCatTotals: Record<string, number> = {};
