@@ -58,7 +58,7 @@ export const Sidebar: React.FC = () => {
                 <span>{item.label}</span>
 
                 {item.badge && (
-                  <span className={`ml-auto hidden xl:inline-block text-[9px] font-pixel px-1.5 py-0.5 rounded border border-black ${
+                  <span className={`ml-auto hidden md:inline-block text-[9px] font-pixel px-1.5 py-0.5 rounded border border-black truncate max-w-[60px] ${
                     isActive ? 'bg-black text-[#00D2FF]' : 'bg-[#16213E] text-zinc-300'
                   }`}>
                     {item.badge}
