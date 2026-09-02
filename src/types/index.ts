@@ -97,7 +97,6 @@ export interface SmartInsight {
   description: string;
   type: 'positive' | 'warning' | 'tip' | 'milestone';
   icon: string;
-  badge: string;
   impactValue?: string;
 }
 
