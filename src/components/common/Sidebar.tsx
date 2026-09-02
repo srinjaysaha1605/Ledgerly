@@ -32,11 +32,11 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-full md:w-64 bg-[#16213E] border-r-0 md:border-r-4 border-b-4 md:border-b-0 border-black p-4 flex flex-col justify-between shadow-[4px_0_0_0_#000]">
+    <aside className="w-full md:w-64 bg-[#16213E] border-r-0 md:border-r-4 border-b-4 md:border-b-0 border-black p-2.5 sm:p-4 flex flex-col justify-between shadow-[4px_0_0_0_#000] shrink-0">
       
       {/* Navigation Items */}
-      <div className="space-y-2">
-        <nav className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-1 gap-2.5">
+      <div className="w-full">
+        <nav className="flex md:flex-col overflow-x-auto md:overflow-visible gap-2 pb-1.5 md:pb-0 w-full scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
@@ -48,14 +48,14 @@ export const Sidebar: React.FC = () => {
                   arcadeAudio.playClick();
                   setActiveView(item.id);
                 }}
-                className={`comic-btn w-full p-2.5 flex items-center gap-3 font-comic text-base font-bold tracking-wide transition-all border-4 border-black ${
+                className={`comic-btn shrink-0 md:shrink w-auto md:w-full p-2 md:p-2.5 flex items-center gap-2 md:gap-3 font-comic text-xs sm:text-sm md:text-base font-bold tracking-wide transition-all border-2 sm:border-4 border-black whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#00D2FF] text-black shadow-[4px_4px_0px_#000]'
-                    : 'bg-[#1A1A2E] text-white hover:bg-[#222244] hover:text-[#F9ED69] shadow-[4px_4px_0px_#000]'
+                    ? 'bg-[#00D2FF] text-black shadow-[3px_3px_0px_#000]'
+                    : 'bg-[#1A1A2E] text-white hover:bg-[#222244] hover:text-[#F9ED69] shadow-[3px_3px_0px_#000]'
                 }`}
               >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-black' : 'text-[#00D2FF]'}`} />
-                <span className="truncate">{item.label}</span>
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${isActive ? 'text-black' : 'text-[#00D2FF]'}`} />
+                <span>{item.label}</span>
 
                 {item.badge && (
                   <span className={`ml-auto hidden xl:inline-block text-[9px] font-pixel px-1.5 py-0.5 rounded border border-black ${
@@ -66,7 +66,7 @@ export const Sidebar: React.FC = () => {
                 )}
 
                 {item.count !== undefined && (
-                  <span className={`ml-auto text-xs font-mono px-1.5 rounded ${
+                  <span className={`ml-1 md:ml-auto text-[10px] sm:text-xs font-mono px-1.5 rounded ${
                     isActive ? 'bg-black text-[#00D2FF] font-bold' : 'bg-[#16213E] text-zinc-300'
                   }`}>
                     {item.count}
