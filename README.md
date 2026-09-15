@@ -1,3 +1,5 @@
+<div align="center">
+
 # Ledgerly - Personal Finance Tracker 🪙🎮
 
 **Ledgerly** is an arcade-themed, gamified personal finance tracker built to make budgeting, expense logging, and wealth tracking engaging, intuitive, and fun.
@@ -24,47 +26,3 @@
 - **Backend & Auth**: Firebase Authentication & Google Cloud Firestore
 
 ---
-
-## 🚀 Getting Started Locally
-
-### Prerequisites
-
-Ensure you have [Node.js](https://nodejs.org/) (v18 or higher) installed on your machine.
-
-### Installation
-
-1. **Clone or Download the Repository**:
-   ```bash
-   git clone <repository-url>
-   cd cash-quest
-Install Dependencies:
-code
-Bash
-npm install
-Environment Setup:
-Create a .env file in the root directory (or use .env.example) and supply your Firebase configuration keys:
-code
-Env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-Start the Development Server:
-code
-Bash
-npm run dev
-Open your browser and navigate to http://localhost:3000.
-🌐 Deploying to Production
-Firebase Hosting (Recommended)
-Build the production bundle:
-code
-Bash
-npm run build
-Deploy using the Firebase CLI:
-code
-Bash
-npx firebase-tools login
-npx firebase-tools init hosting
-npx firebase-tools deploy --only hosting
