@@ -308,6 +308,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <XAxis dataKey="month" stroke="#a1a1aa" tick={{ fontSize: 12, fontFamily: 'monospace' }} />
                 <YAxis stroke="#a1a1aa" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
                 <Tooltip 
+                  cursor={false}
                   formatter={(value: any, name: any) => [formatCurrency(Number(value || 0)), name || 'Amount']}
                   contentStyle={{ backgroundColor: '#09090b', borderColor: '#000', borderWidth: 2, borderRadius: 4 }}
                   itemStyle={{ fontFamily: 'monospace', fontSize: 12 }}
