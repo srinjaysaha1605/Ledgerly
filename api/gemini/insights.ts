@@ -20,6 +20,18 @@ function getGeminiClient(): GoogleGenAI | null {
   return aiClient;
 }
 
+// Serverless execution configuration
+export const maxDuration = 60;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -76,35 +88,41 @@ Guidelines:
       "gemini-3.6-flash",
     ];
 
+    const TIMEOUT_PER_MODEL_MS = 8000; // 8-second strict ceiling per model attempt to prevent Vercel 60s timeout
+
     let successfulInsights: any = null;
     let usedModel = "";
     let lastError: any = null;
 
     for (const model of CANDIDATE_MODELS) {
       try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.ARRAY,
-              description: "List of 4 real financial insights",
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING, description: "Uppercase punchy title" },
-                  description: { type: Type.STRING, description: "1-2 sentence explanation with real figures" },
-                  type: { type: Type.STRING, enum: ["positive", "warning", "tip", "milestone"] },
-                  icon: { type: Type.STRING, description: "One of: Zap, AlertTriangle, Repeat, Trophy, TrendingUp, PiggyBank, ShieldCheck, Sparkles" },
-                  badge: { type: Type.STRING, description: "Short 1-2 word badge" },
-                  impactValue: { type: Type.STRING, description: "Short numeric impact or metric, e.g. +$320.00, 74% Done" },
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.ARRAY,
+                description: "List of 4 real financial insights",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING, description: "Uppercase punchy title" },
+                    description: { type: Type.STRING, description: "1-2 sentence explanation with real figures" },
+                    type: { type: Type.STRING, enum: ["positive", "warning", "tip", "milestone"] },
+                    icon: { type: Type.STRING, description: "One of: Zap, AlertTriangle, Repeat, Trophy, TrendingUp, PiggyBank, ShieldCheck, Sparkles" },
+                    badge: { type: Type.STRING, description: "Short 1-2 word badge" },
+                    impactValue: { type: Type.STRING, description: "Short numeric impact or metric, e.g. +$320.00, 74% Done" },
+                  },
+                  required: ["title", "description", "type", "badge"],
                 },
-                required: ["title", "description", "type", "badge"],
               },
             },
-          },
-        });
+          }),
+          TIMEOUT_PER_MODEL_MS,
+          `Gemini (${model})`
+        );
 
         const responseText = response.text;
         if (responseText) {
@@ -117,7 +135,7 @@ Guidelines:
         }
       } catch (err: any) {
         lastError = err;
-        console.warn(`[Gemini /api/gemini/insights] Model ${model} failed:`, err?.message || err);
+        console.warn(`[Gemini /api/gemini/insights] Model ${model} failed or timed out:`, err?.message || err);
       }
     }
 
