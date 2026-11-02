@@ -2,17 +2,13 @@ import React, { useState } from 'react';
 import { 
   User, 
   Mail, 
-  ShieldCheck, 
-  Lock, 
+  ShieldCheck,  
   CheckCircle2, 
   Sparkles,
   Save,
   ShieldAlert,
   LogOut,
   Sliders,
-  Eye,
-  EyeOff,
-  KeyRound,
   Bell,
   Volume2,
   VolumeX
@@ -76,34 +72,6 @@ export const ProfileView: React.FC = () => {
     setTimeout(() => setSavedSuccess(''), 2500);
   };
 
-  // Direct Password Update
-  const handlePasswordUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    if (!currentPassword) {
-      setErrorMessage('Please enter your current password.');
-      arcadeAudio.playAlert();
-      return;
-    }
-    if (!newPassword || newPassword.length < 6) {
-      setErrorMessage('New password must be at least 6 characters.');
-      arcadeAudio.playAlert();
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('New passwords do not match.');
-      arcadeAudio.playAlert();
-      return;
-    }
-
-    arcadeAudio.playLevelUp();
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setSavedSuccess('Security password updated successfully!');
-    setTimeout(() => setSavedSuccess(''), 3000);
-  };
-
   const handleSignOut = () => {
     arcadeAudio.playAlert();
     setIsLoggedIn(false);
@@ -144,16 +112,6 @@ export const ProfileView: React.FC = () => {
           >
             <User className="w-4 h-4" />
             <span>Personal Information</span>
-          </button>
-
-          <button
-            onClick={() => { arcadeAudio.playClick(); setActiveTab('security'); }}
-            className={`comic-btn px-4 py-2 font-comic text-sm uppercase flex items-center gap-2 ${
-              activeTab === 'security' ? 'bg-[#00D2FF] text-black font-bold' : 'bg-[#1A1A2E] text-zinc-300'
-            }`}
-          >
-            <Lock className="w-4 h-4" />
-            <span>Password & Security</span>
           </button>
 
           <button
@@ -291,110 +249,7 @@ export const ProfileView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: PASSWORD & SECURITY */}
-      {activeTab === 'security' && (
-        <div className="comic-box bg-[#16213E] p-6 border-4 border-black shadow-[6px_6px_0px_#000] max-w-2xl mx-auto">
-          <div className="font-comic text-2xl text-[#F9ED69] mb-4 border-b-2 border-black pb-2 flex items-center gap-2">
-            <Lock className="w-6 h-6 text-[#00D2FF]" />
-            CHANGE SECURITY PASSWORD
-          </div>
-
-          <p className="text-xs font-mono text-zinc-300 mb-4">
-            Update your account password key to keep your financial vault secure.
-          </p>
-
-          <form onSubmit={handlePasswordUpdate} className="space-y-4">
-            <div>
-              <label className="block font-pixel text-xs text-[#F9ED69] uppercase mb-1">
-                CURRENT PASSWORD
-              </label>
-              <div className="relative">
-                <input
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  required
-                  placeholder="••••••••"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full bg-black border-3 border-white/20 pl-3 pr-10 py-2 text-sm font-mono text-white rounded outline-none focus:border-[#F9ED69]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  tabIndex={-1}
-                  className="absolute right-3 top-2.5 text-zinc-400 hover:text-white transition-colors"
-                  aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-pixel text-xs text-[#F9ED69] uppercase mb-1">
-                  NEW PASSWORD (MIN 6 CHARS)
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full bg-black border-3 border-white/20 pl-3 pr-10 py-2 text-sm font-mono text-white rounded outline-none focus:border-[#F9ED69]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    tabIndex={-1}
-                    className="absolute right-3 top-2.5 text-zinc-400 hover:text-white transition-colors"
-                    aria-label={showNewPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-pixel text-xs text-[#F9ED69] uppercase mb-1">
-                  CONFIRM NEW PASSWORD
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-black border-3 border-white/20 pl-3 pr-10 py-2 text-sm font-mono text-white rounded outline-none focus:border-[#F9ED69]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    tabIndex={-1}
-                    className="absolute right-3 top-2.5 text-zinc-400 hover:text-white transition-colors"
-                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="comic-btn w-full bg-[#00D2FF] text-black font-comic text-lg py-3 font-bold uppercase flex items-center justify-center gap-2 hover:bg-[#33ddff]"
-            >
-              <KeyRound className="w-5 h-5 stroke-[2.5]" />
-              <span>UPDATE SECURITY PASSWORD</span>
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* TAB 3: PREFERENCES & DATA MANAGEMENT */}
+      {/* TAB 2: PREFERENCES & DATA MANAGEMENT */}
       {activeTab === 'preferences' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
