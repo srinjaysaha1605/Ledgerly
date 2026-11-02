@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   User, 
   Mail, 
-  ShieldCheck,  
   CheckCircle2, 
   Sparkles,
   Save,
@@ -25,20 +24,12 @@ export const ProfileView: React.FC = () => {
     setSoundEnabled
   } = useFinance();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences'>('profile');
 
   // Profile Form State
   const [fullName, setFullName] = useState(user.fullName);
   const [email, setEmail] = useState(user.email);
   const [currency, setCurrency] = useState(user.currency || 'USD');
-
-  // Security & Password State
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Preference Settings
   const [emailNotifications, setEmailNotifications] = useState(true);
