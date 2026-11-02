@@ -152,7 +152,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               $
             </div>
           </div>
-          <div className="font-comic text-3xl font-black text-black tracking-wide">
+          <div className="font-comic text-2xl xl:text-3xl font-black text-black tracking-wide whitespace-nowrap truncate">
             {formatCurrency(totalBalance)}
           </div>
           <div className="mt-2 text-xs font-mono font-bold text-black flex items-center gap-1">
@@ -190,7 +190,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <TrendingDown className="w-4 h-4 stroke-[2.5]" />
             </div>
           </div>
-          <div className="font-comic text-3xl font-black text-black tracking-wide">
+          <div className="font-comic text-2xl xl:text-3xl font-black text-black tracking-wide whitespace-nowrap truncate">
             -{formatCurrency(monthlyExpense)}
           </div>
           <div className="mt-2 text-xs font-mono font-bold text-black flex items-center gap-1">
@@ -208,7 +208,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <PiggyBank className="w-4 h-4 stroke-[2.5]" />
             </div>
           </div>
-          <div className="font-comic text-3xl font-black text-black tracking-wide">
+          <div className="font-comic text-2xl xl:text-3xl font-black text-black tracking-wide whitespace-nowrap truncate">
             {savingsRate.toFixed(1)}%
           </div>
           <div className="mt-2 text-xs font-mono font-bold text-black flex items-center gap-1">
