@@ -140,7 +140,6 @@ export function generateRealLedgerInsights(
         description: `You are saving ${savingsRate.toFixed(1)}% of your income this month (${symbol}${net.toFixed(2)} net surplus). Great fiscal discipline!`,
         type: 'positive',
         icon: 'Zap',
-        badge: 'SAVINGS WIN',
         impactValue: `+${savingsRate.toFixed(0)}% Rate`,
       });
     } else if (savingsRate > 0) {
@@ -150,7 +149,6 @@ export function generateRealLedgerInsights(
         description: `You have retained ${symbol}${net.toFixed(2)} (${savingsRate.toFixed(1)}%) of your income this month. Keep building your reserve!`,
         type: 'positive',
         icon: 'TrendingUp',
-        badge: 'ON TRACK',
         impactValue: `+${symbol}${net.toFixed(2)}`,
       });
     } else {
@@ -160,7 +158,6 @@ export function generateRealLedgerInsights(
         description: `Expenses (${symbol}${expense.toFixed(2)}) exceed incoming revenue (${symbol}${income.toFixed(2)}) by ${symbol}${Math.abs(net).toFixed(2)}. Consider trimming non-essentials.`,
         type: 'warning',
         icon: 'AlertTriangle',
-        badge: 'CASH CAUTION',
         impactValue: `-${symbol}${Math.abs(net).toFixed(2)}`,
       });
     }
@@ -171,7 +168,6 @@ export function generateRealLedgerInsights(
       description: `Log your incoming paycheck or revenue to unlock complete savings rate analytics and automated budget tracking.`,
       type: 'tip',
       icon: 'PiggyBank',
-      badge: 'GET STARTED',
       impactValue: `${transactions.length} Records`,
     });
   }
@@ -194,7 +190,6 @@ export function generateRealLedgerInsights(
       description: `You've spent ${symbol}${spent.toFixed(2)} on ${overBudget.category}, exceeding the ${symbol}${overBudget.monthlyLimit.toFixed(2)} monthly limit.`,
       type: 'warning',
       icon: 'AlertTriangle',
-      badge: 'OVER BUDGET',
       impactValue: `${((spent / overBudget.monthlyLimit) * 100).toFixed(0)}% Used`,
     });
   } else {
@@ -213,7 +208,6 @@ export function generateRealLedgerInsights(
         description: `${topCat} accounts for ${pctOfTotal}% (${symbol}${topAmt.toFixed(2)}) of total expenses this month.`,
         type: 'tip',
         icon: 'TrendingUp',
-        badge: 'TOP CATEGORY',
         impactValue: `${symbol}${topAmt.toFixed(2)}`,
       });
     } else {
@@ -223,7 +217,6 @@ export function generateRealLedgerInsights(
         description: `All tracked categories are currently well within target allocations with zero overruns.`,
         type: 'positive',
         icon: 'ShieldCheck',
-        badge: 'ALL CLEAR',
         impactValue: '100% On Cap',
       });
     }
@@ -239,7 +232,6 @@ export function generateRealLedgerInsights(
       description: `You have ${recurringTxs.length} automated recurring bills & subscriptions totaling ~${symbol}${recurringSum.toFixed(2)}/cycle.`,
       type: 'tip',
       icon: 'Repeat',
-      badge: 'AUTO RECURRING',
       impactValue: `${recurringTxs.length} Active`,
     });
   } else {
@@ -249,7 +241,6 @@ export function generateRealLedgerInsights(
       description: `Tracking ${accounts.length} linked accounts. Ensure you periodically reconcile balances to maintain accurate cash tracking.`,
       type: 'tip',
       icon: 'ShieldCheck',
-      badge: 'PORTFOLIO',
       impactValue: `${accounts.length} Accounts`,
     });
   }
@@ -275,7 +266,6 @@ export function generateRealLedgerInsights(
         : `Target achieved! You've completely funded "${topGoal.name}" with ${symbol}${topGoal.currentProgress.toFixed(2)}!`,
       type: 'milestone',
       icon: 'Trophy',
-      badge: pct >= 100 ? 'COMPLETED' : 'GOAL TARGET',
       impactValue: `${pct}% Done`,
     });
   } else {
@@ -285,7 +275,6 @@ export function generateRealLedgerInsights(
       description: 'Define your first savings goal in the Budgets & Goals tab to unlock automated milestones and timeline tracking.',
       type: 'milestone',
       icon: 'Trophy',
-      badge: 'NEW TARGET',
       impactValue: 'Create Goal',
     });
   }
@@ -326,7 +315,6 @@ export async function fetchGeminiInsights(
         description: String(ins.description || ''),
         type: (['positive', 'warning', 'tip', 'milestone'].includes(ins.type) ? ins.type : 'tip') as any,
         icon: ins.icon || 'Sparkles',
-        badge: ins.badge || 'SMART INSIGHT',
         impactValue: ins.impactValue,
       }));
     }
