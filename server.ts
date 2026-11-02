@@ -35,49 +35,49 @@ async function startServer() {
   // Helper function: Sleep for backoff
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  // Helper function to call Gemini with retries and model fallback
+  // Helper function to call Gemini 3.8 Flash with retries
   async function generateContentWithRetry(
     ai: GoogleGenAI,
     params: {
       prompt: string;
-      models?: string[];
       config?: any;
       maxRetries?: number;
     }
   ): Promise<string> {
-    const models = params.models || ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.1-pro-preview"];
+    const model = "gemini-3.8-flash";
     const maxRetries = params.maxRetries ?? 2;
 
     let lastError: any = null;
 
-    for (const model of models) {
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          const response = await ai.models.generateContent({
-            model,
-            contents: params.prompt,
-            config: params.config,
-          });
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+       try {
+         const response = await ai.models.generateContent({
+           model,
+           contents: params.prompt,
+           config: params.config,
+         });
 
-          if (response.text) {
-            return response.text;
-          }
-        } catch (err: any) {
-          lastError = err;
-          const status = err?.status || err?.code || (err?.message?.includes('503') ? 503 : 0);
-          const isTransient = status === 503 || status === 429 || err?.message?.includes('overloaded') || err?.message?.includes('high demand');
+         if (response.text) {
+          return response.text;
+         }
+         
+         lastError = new Error(`Gemini ${model} returned an empty response.`);
+      } catch (err: any) {
+        lastError = err;
+        const status = err?.status || err?.code || (err?.message?.includes('503') ? 503 : 0);
+        const isTransient = status === 503 || status === 429 || err?.message?.includes('overloaded') || err?.message?.includes('high demand');
 
-          if (isTransient && attempt < maxRetries) {
-            const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 300, 4000);
-            console.warn(`[Gemini] Model ${model} returned transient error (${status}). Retrying in ${delay.toFixed(0)}ms (attempt ${attempt + 1}/${maxRetries})...`);
-            await sleep(delay);
-            continue;
-          }
-
-          // If not transient or exhausted retries on this model, break to try next fallback model
-          console.warn(`[Gemini] Model ${model} failed: ${err.message || err}. Trying next fallback model...`);
-          break;
+        if (isTransient && attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 300, 4000);
+          console.warn(`[Gemini] Model ${model} returned transient error (${status}). Retrying in ${delay.toFixed(0)}ms (attempt ${attempt + 1}/${maxRetries})...`);
+          await sleep(delay);
+          continue;
         }
+
+        // If not transient or exhausted retries, stop retrying this model
+        console.warn(`[Gemini] Model ${model} failed: ${err.message || err}.`);
+        break;
       }
     }
 
@@ -268,7 +268,6 @@ Guidelines:
 
       const responseText = await generateContentWithRetry(ai, {
         prompt,
-        models: ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.1-pro-preview"],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -319,7 +318,6 @@ Include concrete calculations or suggestions where applicable. Use clear formatt
 
       const answer = await generateContentWithRetry(ai, {
         prompt,
-        models: ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.1-pro-preview"],
       });
 
       return res.json({ success: true, answer });
