@@ -52,7 +52,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const [selectedTag, setSelectedTag] = useState<string>('all');
 
   // Sorting
-  const [sortField, setSortField] = useState<'date' | 'amount' | 'title'>('date');
+  const [sortField, setSortField] = useState<'date' | 'amount' | 'title' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Edit Modal State
@@ -65,9 +65,22 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     return Array.from(set);
   }, [transactions]);
 
+  const invalidAmountRange =
+    minAmount !== '' &&
+    maxAmount !== '' &&
+    Number(minAmount) > Number(maxAmount);
+  
+  const invalidDateRange =
+    startDate !== '' &&
+    endDate !== '' &&
+    startDate > endDate;
+
   // Filter & Sort Logic
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
+      
+      // Validate filter ranges
+      if (invalidAmountRange || invalidDateRange) return false;
       // Type Filter
       if (selectedType !== 'all' && t.type !== selectedType) return false;
       // Category Filter
@@ -83,29 +96,48 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       if (startDate && t.date < startDate) return false;
       if (endDate && t.date > endDate) return false;
       // Text Search
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        const matchTitle = t.title?.toLowerCase().includes(q);
-        const matchCat = t.category?.toLowerCase().includes(q);
-        const matchNotes = t.notes?.toLowerCase().includes(q);
-        if (!matchTitle && !matchCat && !matchNotes) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const account = accounts.find(a => a.id === t.accountId);
+      
+        const searchableFields = [
+          t.title,
+          t.category,
+          t.notes,
+          account?.name,
+          ...(t.tags || [])
+        ];
+      
+        if (!searchableFields.some(value =>
+          value?.toLowerCase().includes(q)
+        )) return false;
       }
       return true;
     }).sort((a, b) => {
-      let valA = a[sortField] || '';
-      let valB = b[sortField] || '';
-      if (sortField === 'amount') {
-        valA = a.amount;
-        valB = b.amount;
-      }
-      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+        let valA: string | number = a[sortField] || '';
+        let valB: string | number = b[sortField] || '';
+  
+        if (sortField === 'amount') {
+          valA = a.amount;
+          valB = b.amount;
+        } else if (sortField === 'type') {
+          // 'income' -> Credit, 'expense' -> Debit
+          valA = a.type === 'income' ? 'Credit' : 'Debit';
+          valB = b.type === 'income' ? 'Credit' : 'Debit';
+        }
+  
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+  
+        // Secondary sort: keep latest transactions first within the same type
+        return b.date.localeCompare(a.date);
     });
   }, [
-    transactions, selectedType, selectedCategory, selectedAccount, 
-    selectedTag, minAmount, maxAmount, startDate, endDate, 
-    searchQuery, sortField, sortOrder
+    transactions, accounts,
+    selectedType, selectedCategory, selectedAccount,
+    selectedTag, minAmount, maxAmount, startDate, endDate,
+    searchQuery, sortField, sortOrder,
+    invalidAmountRange, invalidDateRange
   ]);
 
   const handleExportCSV = () => {
@@ -120,7 +152,14 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     printFinancialReportPDF(user, accounts, filteredTransactions, [], [], totalInc, totalExp);
   };
 
-  const handleSortToggle = (field: 'date' | 'amount' | 'title') => {
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this transaction?')) {
+      deleteTransaction(id);
+      arcadeAudio.playClick();
+    }
+  };
+
+  const handleSortToggle = (field: 'date' | 'amount' | 'title' | 'type') => {
     arcadeAudio.playClick();
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -133,6 +172,12 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingTx) {
+
+      if (!Number.isFinite(editingTx.amount) || editingTx.amount <= 0) {
+        alert('Please enter a valid amount greater than zero.');
+        return;
+      }
+      
       editTransaction(editingTx);
       setEditingTx(null);
     }
@@ -253,6 +298,23 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </select>
           </div>
 
+          {/* Tag Selector */}
+          <div>
+            <label className="block text-[10px] font-pixel text-zinc-400 uppercase mb-1">
+              TAG
+            </label>
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="w-full bg-zinc-950 border-2 border-black px-2 py-1.5 text-xs text-white font-mono rounded outline-none"
+            >
+              <option value="all">All Tags</option>
+              {allTags.map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
+          </div>
+
         </div>
 
         {/* Date & Amount Ranges */}
@@ -324,6 +386,13 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             >
               AMOUNT {sortField === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
             </button>
+
+            <button
+              onClick={() => handleSortToggle('type')}
+              className={`px-2 py-1 border rounded ${sortField === 'type' ? 'bg-yellow-400 text-black border-black font-bold' : 'bg-zinc-800'}`}
+            >
+              DEBIT / CREDIT {sortField === 'type' && (sortOrder === 'asc' ? '↑ (CR)' : '↓ (DR)')}
+            </button>
           </div>
         </div>
 
@@ -394,7 +463,11 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       <td className={`p-3 text-right font-mono text-sm font-bold whitespace-nowrap ${
                         tx.type === 'expense' ? 'text-red-400' : tx.type === 'income' ? 'text-green-400' : 'text-cyan-400'
                       }`}>
-                        {tx.type === 'expense' ? '-' : '+'}{formatCurrency(tx.amount)}
+                        {tx.type === 'expense'
+                          ? '-'
+                          : tx.type === 'income'
+                            ? '+'
+                            : ''}{formatCurrency(tx.amount)}
                       </td>
 
                       <td className="p-3 text-center">
@@ -418,7 +491,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                           </button>
 
                           <button
-                            onClick={() => deleteTransaction(tx.id)}
+                            onClick={() => handleDelete(tx.id)}
                             title="Delete Record"
                             className="p-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded border border-black"
                           >
@@ -461,9 +534,13 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   <input
                     type="number"
                     step="0.01"
+                    min="0.01"
                     required
                     value={editingTx.amount}
-                    onChange={(e) => setEditingTx({ ...editingTx, amount: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setEditingTx({
+                      ...editingTx,
+                      amount: e.target.value === '' ? 0 : Number(e.target.value)
+                    })}
                     className="w-full bg-zinc-950 border-2 border-black px-2.5 py-1.5 font-mono text-white rounded"
                   />
                 </div>
