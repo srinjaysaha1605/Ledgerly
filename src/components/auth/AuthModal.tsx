@@ -4,12 +4,11 @@ import {
   Lock, 
   Mail, 
   User, 
-  ShieldAlert, 
   CheckCircle2, 
-  KeyRound, 
   ArrowRight,
   Sparkles
 } from 'lucide-react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { useFinance } from '../../context/FinanceContext';
 import { arcadeAudio } from '../../utils/audio';
 
@@ -20,8 +19,7 @@ export const AuthModal: React.FC = () => {
     authTab, 
     setAuthTab, 
     setIsLoggedIn,
-    updateUserProfile,
-    user
+    updateUserProfile
   } = useFinance();
 
   // Registration Form State
@@ -29,9 +27,13 @@ export const AuthModal: React.FC = () => {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
-  // Login Form State (starts empty for security)
+  // Login Form State
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // Turnstile Captcha State
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState('');
 
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -40,6 +42,15 @@ export const AuthModal: React.FC = () => {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) return;
+
+    // Optional frontend gate: ensure captcha solved
+    if (!turnstileToken) {
+      arcadeAudio.playAlert?.();
+      setCaptchaError('Please complete the security challenge.');
+      return;
+    }
+
+    setCaptchaError('');
     arcadeAudio.playLevelUp();
     updateUserProfile({ email: loginEmail.trim() });
     setLoginPassword('');
@@ -49,6 +60,15 @@ export const AuthModal: React.FC = () => {
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Optional frontend gate: ensure captcha solved
+    if (!turnstileToken) {
+      arcadeAudio.playAlert?.();
+      setCaptchaError('Please complete the security challenge.');
+      return;
+    }
+
+    setCaptchaError('');
     arcadeAudio.playLevelUp();
     updateUserProfile({
       fullName: regFullName.trim() || (regEmail.trim() ? regEmail.trim().split('@')[0] : 'User'),
@@ -64,7 +84,7 @@ export const AuthModal: React.FC = () => {
 
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    arcadeAudio.playCoin();
+    arcadeAudio.playCoin?.();
     setSuccessMessage('Reset link dispatched to email!');
     setTimeout(() => setAuthTab('reset'), 1000);
   };
@@ -86,7 +106,6 @@ export const AuthModal: React.FC = () => {
             <Sparkles className="w-5 h-5 text-cyan-400" />
             {authTab === 'login' && 'ACCOUNT LOGIN'}
             {authTab === 'register' && 'CREATE NEW ACCOUNT'}
-            {authTab === 'verify' && 'EMAIL VERIFICATION'}
             {authTab === 'forgot' && 'RECOVER ACCOUNT'}
             {authTab === 'reset' && 'RESET PASSWORD'}
           </div>
@@ -98,9 +117,31 @@ export const AuthModal: React.FC = () => {
           </button>
         </div>
 
+        {/* Turnstile Security Box (Only shown on Login and Register tabs) */}
+        {(authTab === 'login' || authTab === 'register') && (
+          <div className="px-6 pt-4 pb-1">
+            <div className="flex flex-col items-center justify-center bg-zinc-950 p-2 rounded border-2 border-black min-h-[70px]">
+              <Turnstile
+                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAAFweiUtPbCjS12Dx"}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setCaptchaError('');
+                }}
+                onError={() => setCaptchaError('Security challenge failed. Please retry.')}
+                onExpire={() => setTurnstileToken(null)}
+                options={{ theme: 'dark', size: 'normal' }}
+              />
+            </div>
+            {captchaError && (
+              <p className="text-[11px] font-mono text-red-400 text-center mt-1">
+                {captchaError}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Content Body */}
         <div className="p-5 bg-zinc-900">
-          
           {successMessage && (
             <div className="mb-4 p-3 bg-green-950 border-2 border-black text-green-400 font-comic text-sm flex items-center gap-2 shadow-[2px_2px_0px_#000]">
               <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
@@ -216,8 +257,6 @@ export const AuthModal: React.FC = () => {
                 </div>
               </div>
 
-
-
               <div>
                 <label className="block text-[10px] font-pixel text-zinc-400 uppercase mb-1">
                   PASSWORD
@@ -255,7 +294,7 @@ export const AuthModal: React.FC = () => {
             </form>
           )}
 
-          {/* TAB 4: FORGOT PASSWORD */}
+          {/* TAB 3: FORGOT PASSWORD */}
           {authTab === 'forgot' && (
             <form onSubmit={handleForgotSubmit} className="space-y-4">
               <p className="text-xs text-zinc-300 font-mono">
@@ -294,7 +333,7 @@ export const AuthModal: React.FC = () => {
             </form>
           )}
 
-          {/* TAB 5: RESET PASSWORD */}
+          {/* TAB 4: RESET PASSWORD */}
           {authTab === 'reset' && (
             <form onSubmit={handleResetSubmit} className="space-y-4">
               <div>
@@ -331,7 +370,6 @@ export const AuthModal: React.FC = () => {
           )}
 
         </div>
-
       </div>
     </div>
   );
