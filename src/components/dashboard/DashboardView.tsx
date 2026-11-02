@@ -170,9 +170,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <TrendingUp className="w-4 h-4 stroke-[2.5]" />
             </div>
           </div>
-          <div className="font-comic text-3xl font-black text-black tracking-wide">
+          
+          <div className="font-comic text-2xl xl:text-3xl font-black text-black tracking-wide whitespace-nowrap truncate">
             +{formatCurrency(monthlyIncome)}
           </div>
+          
           <div className="mt-2 text-xs font-mono font-bold text-black flex items-center gap-1">
             <span>Payday & Freelance Inflow</span>
           </div>
