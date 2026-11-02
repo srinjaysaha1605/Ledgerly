@@ -49,37 +49,45 @@ ${JSON.stringify(financialContext, null, 2)}
 Provide clear, realistic, tailored advice based directly on their real account balances, actual income, expense categories, budgets, and savings goals.
 Include concrete calculations or suggestions where applicable. Use clear formatting with bullet points and bold numbers.`;
 
-    const requestConfig = {
-      model: "gemini-3.8-flash",
-      contents: prompt,
-    };
+    const CANDIDATE_MODELS = [
+      "gemini-3.8-flash",
+      "gemini-2.5-flash",
+      "gemini-3.6-flash",
+    ];
 
-    let response: any;
-    try {
-      response = await ai.models.generateContent(requestConfig);
-    } catch (firstErr: any) {
-      const status = firstErr?.status || firstErr?.code || (firstErr?.message?.includes("503") ? 503 : 0);
-      const isTransient = status === 503 || status === 429 || firstErr?.message?.includes("high demand") || firstErr?.message?.includes("overloaded");
-      if (isTransient) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        response = await ai.models.generateContent(requestConfig);
-      } else {
-        throw firstErr;
+    let successfulAnswer: string | null = null;
+    let usedModel = "";
+    let lastError: any = null;
+
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+        });
+
+        if (response.text) {
+          successfulAnswer = response.text;
+          usedModel = model;
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[Gemini /api/gemini/advisor] Model ${model} failed:`, err?.message || err);
       }
     }
 
-    const answer = response.text;
-    if (!answer) {
-      throw new Error("Gemini returned an empty response.");
+    if (successfulAnswer) {
+      return res.status(200).json({ success: true, answer: successfulAnswer, model: usedModel });
     }
 
-    return res.status(200).json({ success: true, answer, model: "gemini-3.8-flash" });
+    throw lastError || new Error("All Gemini candidate models failed to generate financial advice.");
   } catch (err: any) {
     console.warn("[API Warning /api/gemini/advisor]", err?.message || err);
     return res.status(200).json({
       success: false,
       fallback: true,
-      error: err?.message || "Failed to generate financial advice with gemini-3.8-flash",
+      error: err?.message || "Failed to generate financial advice across candidate models",
     });
   }
 }
