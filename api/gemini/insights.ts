@@ -70,58 +70,68 @@ Guidelines:
    - 'milestone': Report progress on their actual savings goals.
 4. Keep the descriptions clear, punchy, and helpful (1-2 sentences).`;
 
-    const requestConfig = {
-      model: "gemini-3.8-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          description: "List of 4 real financial insights",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING, description: "Uppercase punchy title" },
-              description: { type: Type.STRING, description: "1-2 sentence explanation with real figures" },
-              type: { type: Type.STRING, enum: ["positive", "warning", "tip", "milestone"] },
-              icon: { type: Type.STRING, description: "One of: Zap, AlertTriangle, Repeat, Trophy, TrendingUp, PiggyBank, ShieldCheck, Sparkles" },
-              badge: { type: Type.STRING, description: "Short 1-2 word badge" },
-              impactValue: { type: Type.STRING, description: "Short numeric impact or metric, e.g. +$320.00, 74% Done" },
-            },
-            required: ["title", "description", "type", "badge"],
-          },
-        },
-      },
-    };
+    const CANDIDATE_MODELS = [
+      "gemini-3.8-flash",
+      "gemini-2.5-flash",
+      "gemini-3.6-flash",
+    ];
 
-    let response: any;
-    try {
-      response = await ai.models.generateContent(requestConfig);
-    } catch (firstErr: any) {
-      const status = firstErr?.status || firstErr?.code || (firstErr?.message?.includes("503") ? 503 : 0);
-      const isTransient = status === 503 || status === 429 || firstErr?.message?.includes("high demand") || firstErr?.message?.includes("overloaded");
-      if (isTransient) {
-        // Wait 800ms for temporary spike to ease and retry once
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        response = await ai.models.generateContent(requestConfig);
-      } else {
-        throw firstErr;
+    let successfulInsights: any = null;
+    let usedModel = "";
+    let lastError: any = null;
+
+    for (const model of CANDIDATE_MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.ARRAY,
+              description: "List of 4 real financial insights",
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING, description: "Uppercase punchy title" },
+                  description: { type: Type.STRING, description: "1-2 sentence explanation with real figures" },
+                  type: { type: Type.STRING, enum: ["positive", "warning", "tip", "milestone"] },
+                  icon: { type: Type.STRING, description: "One of: Zap, AlertTriangle, Repeat, Trophy, TrendingUp, PiggyBank, ShieldCheck, Sparkles" },
+                  badge: { type: Type.STRING, description: "Short 1-2 word badge" },
+                  impactValue: { type: Type.STRING, description: "Short numeric impact or metric, e.g. +$320.00, 74% Done" },
+                },
+                required: ["title", "description", "type", "badge"],
+              },
+            },
+          },
+        });
+
+        const responseText = response.text;
+        if (responseText) {
+          const parsed = JSON.parse(responseText);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            successfulInsights = parsed;
+            usedModel = model;
+            break;
+          }
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[Gemini /api/gemini/insights] Model ${model} failed:`, err?.message || err);
       }
     }
 
-    const responseText = response.text;
-    if (!responseText) {
-      throw new Error("Gemini returned an empty response.");
+    if (successfulInsights) {
+      return res.status(200).json({ success: true, insights: successfulInsights, source: usedModel });
     }
 
-    const insights = JSON.parse(responseText);
-    return res.status(200).json({ success: true, insights, source: "gemini-3.8-flash" });
+    throw lastError || new Error("All Gemini candidate models failed to generate insights.");
   } catch (err: any) {
     console.warn("[API Warning /api/gemini/insights]", err?.message || err);
     return res.status(200).json({
       success: false,
       fallback: true,
-      error: err?.message || "Failed to generate AI insights with gemini-3.8-flash",
+      error: err?.message || "Failed to generate AI insights across candidate models",
     });
   }
 }
