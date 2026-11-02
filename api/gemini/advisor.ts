@@ -20,6 +20,18 @@ function getGeminiClient(): GoogleGenAI | null {
   return aiClient;
 }
 
+// Serverless execution configuration
+export const maxDuration = 60;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -55,16 +67,22 @@ Include concrete calculations or suggestions where applicable. Use clear formatt
       "gemini-3.6-flash",
     ];
 
+    const TIMEOUT_PER_MODEL_MS = 8000; // 8-second strict ceiling per model attempt to prevent Vercel 60s timeout
+
     let successfulAnswer: string | null = null;
     let usedModel = "";
     let lastError: any = null;
 
     for (const model of CANDIDATE_MODELS) {
       try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-        });
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model,
+            contents: prompt,
+          }),
+          TIMEOUT_PER_MODEL_MS,
+          `Gemini (${model})`
+        );
 
         if (response.text) {
           successfulAnswer = response.text;
@@ -73,7 +91,7 @@ Include concrete calculations or suggestions where applicable. Use clear formatt
         }
       } catch (err: any) {
         lastError = err;
-        console.warn(`[Gemini /api/gemini/advisor] Model ${model} failed:`, err?.message || err);
+        console.warn(`[Gemini /api/gemini/advisor] Model ${model} failed or timed out:`, err?.message || err);
       }
     }
 
