@@ -8,9 +8,9 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { useFinance } from '../../context/FinanceContext';
 import { arcadeAudio } from '../../utils/audio';
+import { SecurityGate } from './SecurityGate'; // 1. Imported SecurityGate
 
 export const AuthModal: React.FC = () => {
   const { 
@@ -31,20 +31,25 @@ export const AuthModal: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Turnstile Captcha State
+  // Captcha & Gate State
+  const [isGateVerified, setIsGateVerified] = useState(false); // 2. Gate Verification state
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState('');
-
   const [successMessage, setSuccessMessage] = useState('');
 
   if (!authModalOpen) return null;
+
+  const handleClose = () => {
+    arcadeAudio.playClick();
+    setIsGateVerified(false);
+    setAuthModalOpen(false);
+  };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) return;
 
-    // Optional frontend gate: ensure captcha solved
-    if (!turnstileToken) {
+    if (!isGateVerified && !turnstileToken) {
       arcadeAudio.playAlert?.();
       setCaptchaError('Please complete the security challenge.');
       return;
@@ -61,8 +66,7 @@ export const AuthModal: React.FC = () => {
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Optional frontend gate: ensure captcha solved
-    if (!turnstileToken) {
+    if (!isGateVerified && !turnstileToken) {
       arcadeAudio.playAlert?.();
       setCaptchaError('Please complete the security challenge.');
       return;
@@ -98,8 +102,19 @@ export const AuthModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-zinc-900 border-4 border-black shadow-[8px_8px_0px_#000000] comic-box overflow-hidden">
+      {/* Container is relative so SecurityGate overlays it cleanly */}
+      <div className="relative w-full max-w-md bg-zinc-900 border-4 border-black shadow-[8px_8px_0px_#000000] comic-box overflow-hidden">
         
+        {/* 3. Independent Security Gate Layer */}
+        {!isGateVerified && (
+          <SecurityGate
+            onVerified={() => {
+              setIsGateVerified(true);
+              setTurnstileToken('verified');
+            }}
+          />
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 bg-zinc-950 border-b-3 border-black">
           <div className="font-comic text-xl text-yellow-400 flex items-center gap-2">
@@ -110,35 +125,12 @@ export const AuthModal: React.FC = () => {
             {authTab === 'reset' && 'RESET PASSWORD'}
           </div>
           <button
-            onClick={() => { arcadeAudio.playClick(); setAuthModalOpen(false); }}
+            onClick={handleClose}
             className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Turnstile Security Box (Only shown on Login and Register tabs) */}
-        {(authTab === 'login' || authTab === 'register') && (
-          <div className="px-6 pt-4 pb-1">
-            <div className="flex flex-col items-center justify-center bg-zinc-950 p-2 rounded border-2 border-black min-h-[70px]">
-              <Turnstile
-                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAAFweiUtPbCjS12Dx"}
-                onSuccess={(token) => {
-                  setTurnstileToken(token);
-                  setCaptchaError('');
-                }}
-                onError={() => setCaptchaError('Security challenge failed. Please retry.')}
-                onExpire={() => setTurnstileToken(null)}
-                options={{ theme: 'dark', size: 'normal' }}
-              />
-            </div>
-            {captchaError && (
-              <p className="text-[11px] font-mono text-red-400 text-center mt-1">
-                {captchaError}
-              </p>
-            )}
-          </div>
-        )}
 
         {/* Content Body */}
         <div className="p-5 bg-zinc-900">
