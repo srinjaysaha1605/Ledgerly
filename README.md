@@ -20,7 +20,7 @@
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS
 - **Animations & Icons**: Motion (Framer Motion), Lucide React
 - **Audio**: Web Audio API (Retro arcade sound synthesizer)
 - **Backend & Auth**: Firebase Authentication & Google Cloud Firestore
