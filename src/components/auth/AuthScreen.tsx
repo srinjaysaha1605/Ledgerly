@@ -435,7 +435,7 @@ export const AuthScreen: React.FC = () => {
                 <span className="text-[10px] sm:text-[11px] font-pixel text-zinc-400 uppercase tracking-wider shrink-0">
                   SECURITY:
                 </span>
-                <span className="font-mono font-bold text-sm sm:text-base text-white bg-zinc-900 border border-white/30 px-2.5 py-0.5 rounded tracking-widest select-none shadow-[inset_1px_1px_0px_rgba(255,255,255,0.1)]">
+                <span className="font-mono font-bold text-sm sm:text-base text-white bg-zinc-900 border border-white/30 px-2.5 py-0.5 rounded whitespace-nowrap select-none shadow-[inset_1px_1px_0px_rgba(255,255,255,0.1)]">
                   {captchaNum1} + {captchaNum2} =
                 </span>
               </div>
