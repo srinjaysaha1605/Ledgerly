@@ -15,7 +15,8 @@ import {
   DollarSign,
   Eye,
   EyeOff,
-  MailCheck
+  MailCheck,
+  RotateCw
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { arcadeAudio } from '../../utils/audio';
@@ -62,6 +63,32 @@ export const AuthScreen: React.FC = () => {
   const [newPasswordVal, setNewPasswordVal] = useState('');
   const [confirmPasswordVal, setConfirmPasswordVal] = useState('');
 
+  // Black and White Math Sum Captcha State
+  const [captchaNum1, setCaptchaNum1] = useState(() => Math.floor(Math.random() * 8) + 2);
+  const [captchaNum2, setCaptchaNum2] = useState(() => Math.floor(Math.random() * 8) + 1);
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaSolved, setCaptchaSolved] = useState(false);
+
+  const resetCaptcha = () => {
+    const n1 = Math.floor(Math.random() * 8) + 2;
+    const n2 = Math.floor(Math.random() * 8) + 1;
+    setCaptchaNum1(n1);
+    setCaptchaNum2(n2);
+    setCaptchaInput('');
+    setCaptchaSolved(false);
+  };
+
+  const handleCaptchaChange = (val: string) => {
+    const clean = val.replace(/[^0-9]/g, '').slice(0, 3);
+    setCaptchaInput(clean);
+    if (clean !== '' && parseInt(clean, 10) === captchaNum1 + captchaNum2) {
+      setCaptchaSolved(true);
+      setErrorMsg('');
+    } else {
+      setCaptchaSolved(false);
+    }
+  };
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -88,6 +115,12 @@ export const AuthScreen: React.FC = () => {
 
     if (!loginPassword.trim()) {
       setErrorMsg('Please enter your password key to continue.');
+      arcadeAudio.playAlert();
+      return;
+    }
+
+    if (!captchaSolved && parseInt(captchaInput, 10) !== captchaNum1 + captchaNum2) {
+      setErrorMsg(`Security Check: Please solve the sum (${captchaNum1} + ${captchaNum2})`);
       arcadeAudio.playAlert();
       return;
     }
@@ -148,6 +181,12 @@ export const AuthScreen: React.FC = () => {
 
     if (regPassword.length < 6) {
       setErrorMsg('Password must be at least 6 characters long');
+      arcadeAudio.playAlert();
+      return;
+    }
+
+    if (!captchaSolved && parseInt(captchaInput, 10) !== captchaNum1 + captchaNum2) {
+      setErrorMsg(`Security Check: Please solve the sum (${captchaNum1} + ${captchaNum2})`);
       arcadeAudio.playAlert();
       return;
     }
@@ -370,7 +409,7 @@ export const AuthScreen: React.FC = () => {
             <div className="flex gap-1.5 self-end xs:self-auto">
               <button
                 type="button"
-                onClick={() => { arcadeAudio.playClick(); setAuthMode('login'); setErrorMsg(''); setSuccessMsg(''); }}
+                onClick={() => { arcadeAudio.playClick(); setAuthMode('login'); setErrorMsg(''); setSuccessMsg(''); resetCaptcha(); }}
                 className={`comic-btn px-2.5 sm:px-3 py-1 font-comic text-xs uppercase ${
                   authMode === 'login' ? 'bg-[#F9ED69] text-black font-bold' : 'bg-[#1A1A2E] text-zinc-300'
                 }`}
@@ -379,7 +418,7 @@ export const AuthScreen: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => { arcadeAudio.playClick(); setAuthMode('register'); setErrorMsg(''); setSuccessMsg(''); }}
+                onClick={() => { arcadeAudio.playClick(); setAuthMode('register'); setErrorMsg(''); setSuccessMsg(''); resetCaptcha(); }}
                 className={`comic-btn px-2.5 sm:px-3 py-1 font-comic text-xs uppercase ${
                   authMode === 'register' ? 'bg-[#00D2FF] text-black font-bold' : 'bg-[#1A1A2E] text-zinc-300'
                 }`}
@@ -388,6 +427,57 @@ export const AuthScreen: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Simple Black & White Math Captcha (under account login / sign up header) */}
+          {(authMode === 'login' || authMode === 'register') && (
+            <div className="mb-4 bg-black border-2 border-white/20 p-2.5 rounded flex items-center justify-between gap-3 shadow-[2px_2px_0px_#000]">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-pixel text-zinc-400 uppercase tracking-wider shrink-0">
+                  SECURITY:
+                </span>
+                <span className="font-mono font-bold text-sm sm:text-base text-white bg-zinc-900 border border-white/30 px-2.5 py-0.5 rounded tracking-widest select-none shadow-[inset_1px_1px_0px_rgba(255,255,255,0.1)]">
+                  {captchaNum1} + {captchaNum2} =
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-1.5 shrink-0">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={3}
+                  value={captchaInput}
+                  onChange={(e) => handleCaptchaChange(e.target.value)}
+                  placeholder="?"
+                  aria-label="Human verification answer"
+                  className={`w-12 sm:w-14 text-center font-mono font-bold text-sm sm:text-base py-1 px-1 bg-zinc-950 border-2 rounded outline-none transition-colors ${
+                    captchaSolved
+                      ? 'border-white text-white bg-zinc-900 ring-1 ring-white/50'
+                      : captchaInput && !captchaSolved
+                        ? 'border-red-400 text-red-300'
+                        : 'border-white/30 text-white focus:border-white'
+                  }`}
+                />
+                {captchaSolved ? (
+                  <div 
+                    title="Verified"
+                    className="w-7 h-7 bg-white text-black rounded flex items-center justify-center font-mono text-xs font-black shadow-[1px_1px_0px_#000]"
+                  >
+                    ✓
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { arcadeAudio.playClick(); resetCaptcha(); }}
+                    title="Get a new math sum"
+                    className="w-7 h-7 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/20 rounded flex items-center justify-center transition-colors"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Feedback Banners */}
           {errorMsg && (
