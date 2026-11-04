@@ -6,9 +6,9 @@ import {
   User, 
   CheckCircle2, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  RotateCw
 } from 'lucide-react';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { useFinance } from '../../context/FinanceContext';
 import { arcadeAudio } from '../../utils/audio';
 
@@ -31,22 +31,43 @@ export const AuthModal: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Turnstile Captcha State
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Black and White Math Sum Captcha State
+  const [captchaNum1, setCaptchaNum1] = useState(() => Math.floor(Math.random() * 8) + 2);
+  const [captchaNum2, setCaptchaNum2] = useState(() => Math.floor(Math.random() * 8) + 1);
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaSolved, setCaptchaSolved] = useState(false);
   const [captchaError, setCaptchaError] = useState('');
 
   const [successMessage, setSuccessMessage] = useState('');
 
   if (!authModalOpen) return null;
 
+  const resetCaptcha = () => {
+    setCaptchaNum1(Math.floor(Math.random() * 8) + 2);
+    setCaptchaNum2(Math.floor(Math.random() * 8) + 1);
+    setCaptchaInput('');
+    setCaptchaSolved(false);
+    setCaptchaError('');
+  };
+
+  const handleCaptchaChange = (val: string) => {
+    const clean = val.replace(/[^0-9]/g, '').slice(0, 3);
+    setCaptchaInput(clean);
+    if (clean !== '' && parseInt(clean, 10) === captchaNum1 + captchaNum2) {
+      setCaptchaSolved(true);
+      setCaptchaError('');
+    } else {
+      setCaptchaSolved(false);
+    }
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) return;
 
-    // Optional frontend gate: ensure captcha solved
-    if (!turnstileToken) {
+    if (!captchaSolved && parseInt(captchaInput, 10) !== captchaNum1 + captchaNum2) {
       arcadeAudio.playAlert?.();
-      setCaptchaError('Please complete the security challenge.');
+      setCaptchaError(`Security Check: Please solve ${captchaNum1} + ${captchaNum2}`);
       return;
     }
 
@@ -61,10 +82,9 @@ export const AuthModal: React.FC = () => {
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Optional frontend gate: ensure captcha solved
-    if (!turnstileToken) {
+    if (!captchaSolved && parseInt(captchaInput, 10) !== captchaNum1 + captchaNum2) {
       arcadeAudio.playAlert?.();
-      setCaptchaError('Please complete the security challenge.');
+      setCaptchaError(`Security Check: Please solve ${captchaNum1} + ${captchaNum2}`);
       return;
     }
 
@@ -117,23 +137,58 @@ export const AuthModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Turnstile Security Box (Only shown on Login and Register tabs) */}
+        {/* Black and White Math Captcha Box (Only shown on Login and Register tabs) */}
         {(authTab === 'login' || authTab === 'register') && (
-          <div className="px-6 pt-4 pb-1">
-            <div className="flex flex-col items-center justify-center bg-zinc-950 p-2 rounded border-2 border-black min-h-[70px]">
-              <Turnstile
-                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || "0x4AAAAAAFweiUtPbCjS12Dx"}
-                onSuccess={(token) => {
-                  setTurnstileToken(token);
-                  setCaptchaError('');
-                }}
-                onError={() => setCaptchaError('Security challenge failed. Please retry.')}
-                onExpire={() => setTurnstileToken(null)}
-                options={{ theme: 'dark', size: 'normal' }}
-              />
+          <div className="px-5 pt-4 pb-1">
+            <div className="bg-black border-2 border-white/20 p-2.5 rounded flex items-center justify-between gap-3 shadow-[2px_2px_0px_#000]">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-pixel text-zinc-400 uppercase tracking-wider shrink-0">
+                  SECURITY:
+                </span>
+                <span className="font-mono font-bold text-sm sm:text-base text-white bg-zinc-900 border border-white/30 px-2.5 py-0.5 rounded tracking-widest select-none shadow-[inset_1px_1px_0px_rgba(255,255,255,0.1)]">
+                  {captchaNum1} + {captchaNum2} =
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-1.5 shrink-0">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={3}
+                  value={captchaInput}
+                  onChange={(e) => handleCaptchaChange(e.target.value)}
+                  placeholder="?"
+                  aria-label="Human verification answer"
+                  className={`w-12 sm:w-14 text-center font-mono font-bold text-sm sm:text-base py-1 px-1 bg-zinc-950 border-2 rounded outline-none transition-colors ${
+                    captchaSolved
+                      ? 'border-white text-white bg-zinc-900 ring-1 ring-white/50'
+                      : captchaInput && !captchaSolved
+                        ? 'border-red-400 text-red-300'
+                        : 'border-white/30 text-white focus:border-white'
+                  }`}
+                />
+                {captchaSolved ? (
+                  <div 
+                    title="Verified"
+                    className="w-7 h-7 bg-white text-black rounded flex items-center justify-center font-mono text-xs font-black shadow-[1px_1px_0px_#000]"
+                  >
+                    ✓
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { arcadeAudio.playClick(); resetCaptcha(); }}
+                    title="Get a new math sum"
+                    className="w-7 h-7 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/20 rounded flex items-center justify-center transition-colors"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
             {captchaError && (
-              <p className="text-[11px] font-mono text-red-400 text-center mt-1">
+              <p className="text-[11px] font-mono text-red-400 text-center mt-1.5">
                 {captchaError}
               </p>
             )}
